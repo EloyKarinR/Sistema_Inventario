@@ -1,0 +1,342 @@
+{% extends 'Inventario/base.html' %}
+{% load static %}
+
+{% block content %}
+<style>
+    .active4 {
+        color: green !important; /* Cambia el color del texto a verde */
+        font-weight: bold;/* Opcional: hace que el texto sea más grueso */
+    }
+    
+    .badge.bg-success {
+        background-color: #28a745 !important;
+        color: white;
+    }
+    
+    .badge.bg-danger {
+        background-color: #dc3545 !important;
+        color: white;
+    }
+    
+    .modal-header {
+        background-color: #f8f9fa;
+        border-bottom: 1px solid #dee2e6;
+    }
+    
+    .modal-footer {
+        background-color: #f8f9fa;
+        border-top: 1px solid #dee2e6;
+    }
+    
+    .form-label {
+        font-weight: 500;
+        color: #495057;
+    }
+    
+    .pagination .page-link {
+        color: #007bff;
+        border: 1px solid #ddd;
+    }
+    
+    .pagination .page-item.active .page-link {
+        background-color: #007bff;
+        border-color: #007bff;
+        color: white;
+    }
+</style>
+<div class="container mt-4">
+    <h2>Listado de fabricantes</h2>
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <form method="GET" class="form-inline">
+                <div class="input-group">
+                    <input type="text" name="q" class="form-control" placeholder="Buscar por nombre" value="{{ request.GET.q }}">
+                    <div class="input-group-append">
+                        <button class="btn btn-outline-secondary" type="submit">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="col-md-6 text-right">
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#nuevoFabricanteModal">
+                <i class="fas fa-plus"></i> Nuevo
+            </button>
+            <div class="btn-group">
+                <button type="button" class="btn btn-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                    Mostrar
+                </button>
+                <div class="dropdown-menu">
+                    <a class="dropdown-item" href="?mostrar=10">10</a>
+                    <a class="dropdown-item" href="?mostrar=25">25</a>
+                    <a class="dropdown-item" href="?mostrar=50">50</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Fabricante</th>
+                    <th>N° de productos</th>
+                    <th>Estado</th>
+                    <th>Agregado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for fabricante in fabricantes %}
+                <tr>
+                    <td>{{ fabricante.id }}</td>
+                    <td>{{ fabricante.fabricante }}</td>
+                    <td>{{ fabricante.numero_productos }}</td>
+                    <td>
+                        {% if fabricante.estado == 'activo' %}
+                        <span class="badge bg-success">Activo</span>
+                        {% else %}
+                        <span class="badge bg-danger">Inactivo</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ fabricante.agregado|date:"d-m-Y" }}</td>
+                    <td>
+                        <div class="dropdown">
+                            <button class="btn btn-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                Acciones
+                            </button>
+                            <div class="dropdown-menu">
+                                <button class="dropdown-item" type="button" 
+                                        onclick="editarFabricante('{{ fabricante.id_fabricante }}', '{{ fabricante.fabricante }}', '{{ fabricante.numero_productos }}', '{{ fabricante.estado }}')">
+                                    <i class="fas fa-edit"></i> Editar
+                                </button>
+                                <button class="dropdown-item text-danger" type="button" 
+                                        onclick="confirmarBorrado('{{ fabricante.id_fabricante }}')">
+                                    <i class="fas fa-trash"></i> Borrar
+                                </button>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center">No hay fabricantes registrados</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="pagination justify-content-center">
+        <ul class="pagination">
+            {% if fabricantes.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ fabricantes.previous_page_number }}">‹ Anterior</a>
+                </li>
+            {% endif %}
+
+            <li class="page-item active">
+                <span class="page-link">
+                    {{ fabricantes.number }}
+                </span>
+            </li>
+
+            {% if fabricantes.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ fabricantes.next_page_number }}">Siguiente ›</a>
+                </li>
+            {% endif %}
+        </ul>
+    </div>
+
+</div>
+
+<!-- Modal de confirmación para eliminar -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirmar eliminación</h5>
+                <button type="button" class="close" data-bs-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                ¿Está seguro que desea eliminar este fabricante?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <form id="deleteForm" method="POST">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Eliminar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para ingresar nuevos fabricantes -->
+<div class="modal fade" id="nuevoFabricanteModal" tabindex="-1" aria-labelledby="nuevoFabricanteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="nuevoFabricanteModalLabel">Nuevo Fabricante</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="/fabricantes/crear_fabricante/">
+                {% csrf_token %}
+                {{ form.as_p }}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="fabricante" class="form-label">Nombre del Fabricante</label>
+                        <input type="text" class="form-control" id="fabricante" name="fabricante" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="numero_productos" class="form-label">Número de Productos</label>
+                        <input type="number" class="form-control" id="numero_productos" name="numero_productos" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="estado" class="form-label">Estado</label>
+                        <select class="form-control" id="estado" name="estado" required>
+                            <option value="activo">Activo</option>
+                            <option value="inactivo">Inactivo</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                    <button type="submit" class="btn btn-primary">Registrar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para editar fabricante -->
+<div class="modal fade" id="editarFabricanteModal" tabindex="-1" aria-labelledby="editarFabricanteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editarFabricanteModalLabel">Editar Fabricante</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="editarFabricanteForm" method="POST">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <input type="hidden" id="fabricanteId" name="fabricante_id">
+                    <div class="mb-3">
+                        <label for="editFabricante" class="form-label">Nombre del Fabricante</label>
+                        <input type="text" class="form-control" id="editFabricante" name="fabricante" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editNumeroProductos" class="form-label">Número de Productos</label>
+                        <input type="number" class="form-control" id="editNumeroProductos" name="numero_productos" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editEstado" class="form-label">Estado</label>
+                        <select class="form-control" id="editEstado" name="estado" required>
+                            <option value="activo">Activo</option>
+                            <option value="inactivo">Inactivo</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                    <button type="submit" class="btn btn-primary">Guardar cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function editarFabricante(id_fabricante, nombre, numeroProductos, estado) {
+    document.getElementById('fabricanteId').value = id_fabricante;
+    document.getElementById('editFabricante').value = nombre;
+    document.getElementById('editNumeroProductos').value = numeroProductos;
+    document.getElementById('editEstado').value = estado;
+    
+    let modal = new bootstrap.Modal(document.getElementById('editarFabricanteModal'));
+    modal.show();
+}
+
+document.getElementById('editarFabricanteForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const id = document.getElementById('fabricanteId').value;
+    const formData = new FormData(this);
+    
+    // Debug
+    console.log('Enviando petición...');
+    console.log('ID:', id);
+    console.log('FormData:', {
+        fabricante: formData.get('fabricante'),
+        numero_productos: formData.get('numero_productos'),
+        estado: formData.get('estado')
+    });
+
+    fetch(`/fabricantes/editar/${id}/`, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => {
+        console.log('Respuesta recibida:', response.status);
+        return response.json();
+    })
+    .then(data => {
+        console.log('Datos:', data);
+        if (data.success) {
+            const modal = bootstrap.Modal.getInstance(document.getElementById('editarFabricanteModal'));
+            modal.hide();
+            window.location.reload();
+        } else {
+            console.error('Error:', data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error en la petición:', error);
+    });
+});
+
+function confirmarBorrado(id) {
+    // Debug
+    console.log('Confirmando borrado del fabricante:', id);
+    
+    const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
+    modal.show();
+    
+    // Configurar el formulario de borrado
+    document.getElementById('deleteForm').onsubmit = function(e) {
+        e.preventDefault();
+        
+        fetch(`/fabricantes/borrar/${id}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                modal.hide();
+                window.location.reload();
+            } else {
+                console.error('Error:', data.error);
+                alert('Error al borrar el fabricante');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error al borrar el fabricante');
+        });
+    };
+}
+</script>
+
+{% endblock %}
+
+

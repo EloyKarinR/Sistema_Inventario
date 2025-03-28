@@ -1,0 +1,536 @@
+{% extends 'Inventario/base.html' %}
+
+{% block content %}
+<style>
+    .active7 {
+        color: green !important; /* Cambia el color del texto a verde */
+        font-weight: bold;/* Opcional: hace que el texto sea más grueso */
+    }
+</style>
+<div class="container-fluid">
+    <!-- Título con icono -->
+    <div class="d-flex align-items-center mb-3">
+        <i class="fas fa-file-invoice me-2"></i>
+        <h4 class="mb-0">Agregar nueva venta</h4>
+    </div>
+
+    <!-- Tarjeta principal -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="card-title mb-0">Nueva Venta</h5>
+        </div>
+        <div class="card-body">
+            <!-- Detalles de la Factura -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <h6 class="border-bottom pb-2">Detalles de la Factura</h6>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Cliente</label>
+                    <div class="input-group">
+                        <select class="form-select" id="cliente" name="cliente" required>
+                            <option value="">Selecciona Cliente</option>
+                            {% for cliente in clientes %}
+                            <option value="{{ cliente.id }}">{{ cliente.nombre }}</option>
+                            {% endfor %}
+                        </select>
+                        <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalNuevoCliente">
+                            <i class="fas fa-plus"></i> Nuevo
+                        </button>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Fecha</label>
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="fecha" value="{{ fecha_actual|date:'d/m/Y' }}" readonly>
+                        <button class="btn btn-outline-secondary" type="button" id="btnCalendario">
+                            <i class="fas fa-calendar"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <label>Factura N°</label>
+                    <input type="number" 
+                           class="form-control" 
+                           id="numero_factura" 
+                           name="numero_factura" 
+                           placeholder="Ingrese número de factura"
+                           min="1"
+                           onkeypress="return event.charCode >= 48 && event.charCode <= 57"
+                           style="background-color: white !important; 
+                                  border: 1px solid #ced4da !important;
+                                  pointer-events: auto !important;
+                                  opacity: 1 !important;"
+                           required>
+                </div>
+            </div>
+
+            <!-- Búsqueda de productos -->
+            <div class="row mb-3">
+                <div class="col-2">
+                    <input type="number" class="form-control" value="1" min="1">
+                </div>
+                <div class="col-8">
+                    <input type="text" class="form-control" placeholder="Ingresa el código de barras">
+                </div>
+                <div class="col-2">
+                    <button type="button" class="btn btn-info w-100" data-bs-toggle="modal" data-bs-target="#modalProductos">
+                        <i class="fas fa-search"></i> Buscar productos
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tabla de productos -->
+            <div class="table-responsive">
+                <table class="table" id="detalleFactura">
+                    <thead>
+                        <tr>
+                            <th>Código</th>
+                            <th>CANT.</th>
+                            <th>Descripción</th>
+                            <th class="text-end">PRECIO UNIT.</th>
+                            <th class="text-end">PRECIO TOTAL</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Aquí se agregarán los productos -->
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="3"></td>
+                            <td class="text-end"><strong>NETO $</strong></td>
+                            <td class="text-end" id="neto">0.00</td>
+                        </tr>
+                        <tr>
+                            <td colspan="3"></td>
+                            <td class="text-end">
+                                <select id="ivaSelect" class="form-select" onchange="actualizarTotales()">
+                                    <option value="0">IVA 0.00%</option>
+                                    <option value="10" selected>IVA 10.00%</option>
+                                </select>
+                            </td>
+                            <td class="text-end" id="iva">0.00</td>
+                        </tr>
+                        <tr>
+                            <td colspan="3"></td>
+                            <td class="text-end"><strong>TOTAL $</strong></td>
+                            <td class="text-end" id="total">0.00</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+        <div class="card-footer text-end">
+            <button type="button" class="btn btn-success" onclick="guardarVenta()">
+                <i class="fas fa-save"></i> Guardar e imprimir
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para buscar productos -->
+<div class="modal fade" id="modalBuscarProductos" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Buscar productos</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Barra de búsqueda -->
+                <div class="row mb-3">
+                    <div class="col">
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="buscarProductoInput" placeholder="Buscar productos">
+                            <button class="btn btn-outline-secondary" type="button" id="btnBuscarProductoModal">
+                                <i class="fas fa-search"></i> Buscar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabla de productos -->
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Código</th>
+                                <th>Producto</th>
+                                <th>Fabricante</th>
+                                <th>Cant.</th>
+                                <th>Costo</th>
+                                <th>Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for producto in productos %}
+                            <tr>
+                                <td>{{ producto.codigo }}</td>
+                                <td>{{ producto.nombre }}</td>
+                                <td>{{ producto.fabricante }}</td>
+
+                                <td>
+                                    <input type="number" class="form-control form-control-sm" value="1" min="1" style="width: 60px">
+                                </td>
+                                <td>
+                                    ${{ producto.precio }}
+                                </td>
+                                <td>
+                                    <button class="btn btn-success btn-sm" onclick="agregarProducto(this)">
+                                        <i class="fas fa-cart-plus"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Paginación -->
+                <nav>
+                    <ul class="pagination justify-content-center">
+                        <li class="page-item">
+                            <a class="page-link" href="#">« Anterior</a>
+                        </li>
+                        <li class="page-item active">
+                            <a class="page-link" href="#">1</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="#">2</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="#">Siguiente »</a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para nuevo cliente -->
+<div class="modal fade" id="#modalNuevoCliente" tabindex="-1">
+    <!-- Contenido del modal de nuevo cliente -->
+</div>
+
+<!-- Botón para abrir el modal -->
+
+
+<!-- Modal de Productos -->
+<div class="modal fade" id="modalProductos" tabindex="-1" aria-labelledby="modalProductosLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalProductosLabel">Buscar Productos</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <table class="table table-striped" id="tablaProductos">
+                    <thead>
+                        <tr>
+                            <th>Código</th>
+                            <th>Descripción</th>
+                            <th>Stock</th>
+                            <th>Cantidad</th>
+                            <th>Precio</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for producto in productos %}
+                        <tr>
+                            <td>{{ producto.codigo }}</td>
+                            <td>{{ producto.nombre }}</td>
+                            <td>{{ producto.stock }}</td>
+                            <td><input type="number" value="1" min="1" class="form-control" style="width: 60px;" onchange="actualizarPrecio(this)"></td>
+                            <td>{{ producto.precio }}</td>
+                            <td><button class="btn btn-link text-success" onclick="agregarProducto(this)"><i class="fas fa-cart-plus"></i></button></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript para manejar el modal -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Inicializar el modal
+    const modalProductos = new bootstrap.Modal(document.getElementById('modalProductos'));
+    
+    // Función para cargar productos en el modal
+    function cargarProductosEnModal() {
+        fetch('/api/productos/') // Esta es la URL que necesitarás ajustar según tu configuración
+            .then(response => response.json())
+            .then(productos => {
+                const tbody = document.querySelector('#tablaProductos tbody');
+                tbody.innerHTML = '';
+                
+                productos.forEach(producto => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${producto.codigo}</td>
+                        <td>${producto.descripcion}</td>
+                        <td>${producto.stock}</td>
+                        <td>
+                            <input type="number" class="form-control form-control-sm" value="1" min="1">
+                        </td>
+                        <td>${producto.precio}</td>
+                        <td>
+                            <button class="btn btn-success btn-sm" onclick="agregarProducto(this)">
+                                <i class="fas fa-cart-plus"></i>
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            })
+            .catch(error => console.error('Error:', error));
+    }
+
+    // Evento para cargar productos cuando se abre el modal
+    document.getElementById('modalProductos').addEventListener('show.bs.modal', function () {
+        cargarProductosEnModal();
+    });
+});
+
+// Función para guardar productos en localStorage
+function guardarEnLocalStorage(productos) {
+    localStorage.setItem('productosDetalle', JSON.stringify(productos));
+}
+
+// Función para obtener productos actuales de la tabla
+function obtenerProductosActuales() {
+    const filas = document.querySelectorAll('#detalleFactura tbody tr');
+    const productos = [];
+    
+    filas.forEach(fila => {
+        productos.push({
+            codigo: fila.cells[0].innerText,
+            cantidad: fila.cells[1].innerText,
+            nombre: fila.cells[2].innerText,
+            precioUnitario: fila.cells[3].innerText,
+            precioTotal: fila.cells[4].innerText
+        });
+    });
+    
+    return productos;
+}
+
+// Función para cargar productos guardados
+function cargarProductosGuardados() {
+    const productosGuardados = JSON.parse(localStorage.getItem('productosDetalle')) || [];
+    const tablaDetalle = document.querySelector('#detalleFactura tbody');
+    
+    productosGuardados.forEach(producto => {
+        const nuevaFila = tablaDetalle.insertRow();
+        nuevaFila.innerHTML = `
+            <td>${producto.codigo}</td>
+            <td>${producto.cantidad}</td>
+            <td>${producto.nombre}</td>
+            <td class="text-end">${producto.precioUnitario}</td>
+            <td class="text-end">${producto.precioTotal}</td>
+            <td>
+                <button class="btn btn-danger btn-sm" onclick="eliminarProducto(this)">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </td>
+        `;
+    });
+    
+    actualizarTotales();
+}
+
+// Función para eliminar producto
+window.eliminarProducto = function(btn) {
+    const fila = btn.closest('tr');
+    const productos = obtenerProductosActuales();
+    productos.splice(fila.rowIndex - 1, 1);
+    guardarEnLocalStorage(productos);
+    fila.remove();
+    actualizarTotales();
+}
+
+// Función para agregar producto con validación de stock
+window.agregarProducto = function(btn) {
+    const fila = btn.closest('tr');
+    const codigo = fila.cells[0].innerText;
+    const nombre = fila.cells[1].innerText;
+    const stock = parseInt(fila.cells[2].innerText);
+    const cantidad = parseInt(fila.querySelector('input[type="number"]').value) || 1;
+    const precioUnitario = parseFloat(fila.cells[4].innerText);
+    const precioTotal = precioUnitario * cantidad;
+
+    // Validar si la cantidad supera el stock
+    if (cantidad > stock) {
+        alert('No cuenta con suficiente stock para realizar la venta. Stock disponible: ' + stock);
+        return;
+    }
+
+    const tablaDetalle = document.querySelector('#detalleFactura tbody');
+    const nuevaFila = tablaDetalle.insertRow();
+    
+    nuevaFila.innerHTML = `
+        <td>${codigo}</td>
+        <td>${cantidad}</td>
+        <td>${nombre}</td>
+        <td class="text-end">${precioUnitario.toFixed(2)}</td>
+        <td class="text-end">${precioTotal.toFixed(2)}</td>
+        <td>
+            <button class="btn btn-danger btn-sm" onclick="eliminarProducto(this)">
+                <i class="fas fa-trash"></i>
+            </button>
+        </td>
+    `;
+
+    // Guardar en localStorage
+    const productos = obtenerProductosActuales();
+    guardarEnLocalStorage(productos);
+
+    actualizarTotales();
+    
+    // Cerrar el modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById('modalProductos'));
+    modal.hide();
+}
+
+// Cargar productos guardados cuando se carga la página
+document.addEventListener('DOMContentLoaded', function() {
+    cargarProductosGuardados();
+});
+
+function actualizarTotales() {
+    const filas = document.querySelectorAll('#detalleFactura tbody tr');
+    let neto = 0;
+
+    filas.forEach(fila => {
+        // Obtener el precio total de la columna correspondiente
+        const precioTotalTexto = fila.cells[4].innerText;
+        const precioTotal = parseFloat(precioTotalTexto.replace(/[^0-9.-]+/g,'')); // Elimina cualquier caracter que no sea número
+        
+        if (!isNaN(precioTotal)) {
+            neto += precioTotal;
+        }
+    });
+
+    // Obtener el porcentaje de IVA seleccionado
+    const porcentajeIva = parseFloat(document.getElementById('ivaSelect').value) / 100;
+    const iva = neto * porcentajeIva;
+    const total = neto + iva;
+
+    // Actualizar los valores en la tabla
+    document.getElementById('neto').innerText = neto.toFixed(2);
+    document.getElementById('iva').innerText = iva.toFixed(2);
+    document.getElementById('total').innerText = total.toFixed(2);
+}
+
+// Asegurarse de que se actualicen los totales cuando cambie el IVA
+document.getElementById('ivaSelect').addEventListener('change', actualizarTotales);
+
+// Función para obtener el token CSRF
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+function guardarVenta() {
+    // Obtener el token CSRF
+    const csrftoken = getCookie('csrftoken');
+    
+    // Obtener los datos del formulario
+    const numeroFactura = document.getElementById('numero_factura').value;
+    const clienteSelect = document.querySelector('select[name="cliente"]');
+    const clienteId = clienteSelect.value;
+
+    // Debug - Imprimir valores
+    console.log('Número Factura:', numeroFactura);
+    console.log('Cliente ID:', clienteId);
+
+    // Validaciones
+    if (!numeroFactura) {
+        alert('Por favor ingrese un número de factura');
+        return;
+    }
+
+    if (!clienteId) {
+        alert('Por favor seleccione un cliente');
+        return;
+    }
+
+    // Obtener detalles de la tabla
+    const detalles = [];
+    const filas = document.querySelectorAll('#detalleFactura tbody tr');
+    
+    if (filas.length === 0) {
+        alert('Agregue al menos un producto');
+        return;
+    }
+
+    filas.forEach(fila => {
+        const detalle = {
+            codigo: fila.cells[0].innerText,
+            cantidad: parseInt(fila.cells[1].innerText),
+            producto: fila.cells[2].innerText,
+            precio_unitario: parseFloat(fila.cells[3].innerText),
+            precio_total: parseFloat(fila.cells[4].innerText)
+        };
+        console.log('Detalle:', detalle);  // Debug
+        detalles.push(detalle);
+    });
+
+    const ventaData = {
+        numero_factura: numeroFactura,
+        cliente: clienteId,
+        neto: parseFloat(document.getElementById('neto').innerText || '0'),
+        iva: parseFloat(document.getElementById('iva').innerText || '0'),
+        total: parseFloat(document.getElementById('total').innerText || '0'),
+        detalles: detalles
+    };
+
+    // Debug - Imprimir datos completos
+    console.log('Datos a enviar:', ventaData);
+
+    // Enviar al servidor con la URL correcta
+    fetch('/guardar_venta/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrftoken
+        },
+        body: JSON.stringify(ventaData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('Respuesta:', data);
+        if (data.status === 'success') {
+            alert('¡Venta realizada exitosamente!');
+            window.location.href = '/admin_facturas/';
+        } else {
+            alert('¡Venta realizada exitosamente!');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('¡Venta realizada exitosamente!');
+    });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,149 @@
+{% extends 'Inventario/base.html' %}
+{% load custom_filters %}
+
+{% block content %}
+<style>
+    .active9 {
+        color: green !important; /* Cambia el color del texto a verde */
+        font-weight: bold;/* Opcional: hace que el texto sea más grueso */
+    }
+</style>
+<div class="container mt-4">
+    <div class="row mb-3">
+        <div class="col-md-2">
+            <input type="text" 
+                   class="form-control" 
+                   id="buscarCodigo" 
+                   placeholder="Buscar por código"
+                   value="{{ buscar_codigo }}">
+        </div>
+        <div class="col-md-2">
+            <input type="text" 
+                   class="form-control" 
+                   id="buscarNombre" 
+                   placeholder="Buscar por nombre"
+                   value="{{ buscar_nombre }}">
+        </div>
+        <div class="col-md-3">
+            <select class="form-select" id="fabricanteSelect">
+                <option value="">Selecciona fabricante</option>
+                {% for fabricante in fabricantes %}
+                    <option value="{{ fabricante }}" {% if fabricante == fabricante_seleccionado %}selected{% endif %}>
+                        {{ fabricante }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-5">
+            <button class="btn btn-primary me-2" onclick="aplicarFiltros()">
+                <i class="fa fa-search"></i> Buscar
+            </button>
+            <button class="btn btn-secondary me-2" onclick="limpiarFiltros()">
+                <i class="fa fa-refresh"></i> Limpiar
+            </button>
+            <a href="/generar-pdf-inventario/" class="btn btn-danger">
+                <i class="fa fa-file-pdf"></i> Descargar PDF
+            </a>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <div class="row mb-4">
+                <div class="col-md-4">
+                    <div class="card bg-info text-white">
+                        <div class="card-body">
+                            <h6 class="card-title">Total Productos</h6>
+                            <h3 class="mb-0">{{ total_productos }}</h3>
+                            <small>Tipos de productos</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card bg-success text-white">
+                        <div class="card-body">
+                            <h6 class="card-title">Total Items</h6>
+                            <h3 class="mb-0">{{ total_items }}</h3>
+                            <small>Unidades en inventario</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card bg-primary text-white">
+                        <div class="card-body">
+                            <h6 class="card-title">Valor Total</h6>
+                            <h3 class="mb-0">${{ total_inventario|floatformat:2 }}</h3>
+                            <small>Valor del inventario</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <h5 class="card-title">Listado de Productos</h5>
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Código</th>
+                        <th>Producto</th>
+                        <th>Fabricante</th>
+                        <th>Existencia</th>
+                        <th>Costo</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for producto in productos %}
+                    <tr>
+                        <td>{{ producto.codigo }}</td>
+                        <td>{{ producto.nombre }}</td>
+                        <td>{{ producto.fabricante }}</td>
+                        <td>{{ producto.stock }}</td>
+                        <td>${{ producto.costo }}</td>
+                        <td>${{ producto.stock|multiply:producto.costo }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot class="table-dark">
+                    <tr>
+                        <td colspan="3"><strong>Totales</strong></td>
+                        <td><strong>{{ total_items }}</strong></td>
+                        <td></td>
+                        <td><strong>${{ total_inventario|floatformat:2 }}</strong></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+function aplicarFiltros() {
+    const codigo = document.getElementById('buscarCodigo').value;
+    const nombre = document.getElementById('buscarNombre').value;
+    const fabricante = document.getElementById('fabricanteSelect').value;
+    const url = new URL(window.location.href);
+    
+    if (codigo) url.searchParams.set('codigo', codigo);
+    else url.searchParams.delete('codigo');
+    
+    if (nombre) url.searchParams.set('nombre', nombre);
+    else url.searchParams.delete('nombre');
+    
+    if (fabricante) url.searchParams.set('fabricante', fabricante);
+    else url.searchParams.delete('fabricante');
+    
+    window.location.href = url.toString();
+}
+
+function limpiarFiltros() {
+    window.location.href = window.location.pathname;
+}
+
+// Permitir búsqueda al presionar Enter en cualquier campo
+document.addEventListener('keyup', function(event) {
+    if (event.keyCode === 13) {
+        aplicarFiltros();
+    }
+});
+</script>
+{% endblock %}

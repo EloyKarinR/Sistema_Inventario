@@ -1,0 +1,157 @@
+{% extends 'Inventario/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Columna de la imagen -->
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    {% if producto.imagen %}
+                        <img src="{{ producto.imagen.url }}" alt="{{ producto.nombre }}" class="img-fluid mb-3">
+                    {% endif %}
+                    <h5 class="card-title">{{ producto.nombre }}</h5>
+                </div>
+            </div>
+        </div>
+
+        <!-- Columna del formulario -->
+        <div class="col-md-9">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Detalles del producto</h5>
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="codigo">Código</label>
+                                <input type="text" id="codigo" name="codigo" value="{{ producto.codigo }}" class="form-control">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="modelo">Modelo</label>
+                                <input type="text" id="modelo" name="modelo" value="{{ producto.modelo }}" class="form-control">
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="nombre">Nombre</label>
+                                <input type="text" id="nombre" name="nombre" value="{{ producto.nombre }}" class="form-control">
+                            </div>
+                            
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <label for="descripcion">Descripción</label>
+                                <textarea id="descripcion" name="descripcion" class="form-control" rows="3">{{ producto.descripcion }}</textarea>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="fabricante">Fabricante</label>
+                                <select id="fabricante" name="fabricante" class="form-control">
+                                    {% for fab in fabricantes %}
+                                        <option value="{{ fab.fabricante }}" {% if fab.fabricante == producto.fabricante %}selected{% endif %}>
+                                            {{ fab.fabricante }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="estado">Estado</label>
+                                <select id="estado" name="estado" class="form-control">
+                                    <option value="Activo" {% if producto.estado == 'Activo' %}selected{% endif %}>Activo</option>
+                                    <option value="Inactivo" {% if producto.estado == 'Inactivo' %}selected{% endif %}>Inactivo</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="costo">Costo</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" 
+                                           id="costo" 
+                                           name="costo" 
+                                           value="{{ producto.costo }}"
+                                           class="form-control" 
+                                           step="0.01">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="utilidad">Utilidad</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" id="utilidad" name="utilidad" value="{{ producto.utilidad }}" class="form-control" step="0.01">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="precio">Precio de venta</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" 
+                                           id="precio" 
+                                           name="precio" 
+                                           value="{{ producto.precio}}"
+                                           class="form-control" 
+                                           step="0.01">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="stock">Stock</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-boxes"></i></span>
+                                    <input type="number" id="stock" name="stock" value="{{ producto.stock }}" class="form-control">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <label for="imagen">Imagen</label>
+                                <input type="file" id="imagen" name="imagen" class="form-control">
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-primary">Guardar datos</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.card {
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.form-control {
+    border-radius: 4px;
+}
+
+.btn-primary {
+    background-color: #3498db;
+    border: none;
+    padding: 8px 20px;
+}
+
+label {
+    font-weight: 500;
+    margin-bottom: 5px;
+}
+</style>
+{% endblock %}

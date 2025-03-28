@@ -1,0 +1,656 @@
+{% extends 'Inventario/base.html' %}
+
+{% block content %}
+<style>
+    .active6 {
+        color: green !important; /* Cambia el color del texto a verde */
+        font-weight: bold;/* Opcional: hace que el texto sea más grueso */
+    } 
+    .btn-separado {
+        margin-left: 10px; /* Ajusta el valor según sea necesario */
+    }
+    #compra_num {
+        width: 150px; /* Ajusta el valor según sea necesario */
+    }
+   
+</style>
+<div class="container-fluid">
+    <!-- Barra superior con búsqueda y botón nuevo -->
+    <div class="row mb-3">
+        <div class="col">
+            <div class="input-group">
+                <input type="text" class="form-control" placeholder="Buscar por nombre">
+                <button class="btn btn-outline-secondary" type="button">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+        </div>
+        <div class="col-auto">
+            <button class="btn btn-primary" onclick="abrirModalNuevoProveedor()">
+                <i class="fas fa-plus"></i> Nuevo
+            </button>
+            <div class="btn-group">
+                <button type="button" class="btn btn-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                    Mostrar
+                </button>
+                <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="#">10</a></li>
+                    <li><a class="dropdown-item" href="#">25</a></li>
+                    <li><a class="dropdown-item" href="#">50</a></li>
+                    <li><a class="dropdown-item" href="#">100</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <h3>Listado de Proveedores</h3>
+
+    <!-- Tabla de proveedores -->
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th># de Impuesto</th>
+                    <th>Proveedor</th>
+                    <th>Dirección</th>
+                    <th>Contacto</th>
+                    <th>Agregado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for proveedor in proveedores %}
+                <tr>
+                    <td>{{ proveedor.id }}</td>
+                    <td>{{ proveedor.numero_impuesto }}</td>
+                    <td>
+                        <span class="fw-bold">{{ proveedor.nombre }}</span>
+                        {% if proveedor.telefono_empresa %}
+                            <br>
+                            <small><i class="fas fa-phone"></i> {{ proveedor.telefono_empresa }}</small>
+                        {% endif %}
+                        {% if proveedor.sitio_web %}
+                            <br>
+                            <small><i class="fas fa-globe"></i> <a href="{{ proveedor.sitio_web }}" target="_blank">{{ proveedor.sitio_web }}</a></small>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {{ proveedor.calle }}
+                        {% if proveedor.ciudad or proveedor.region_provincia %}
+                            <br>
+                            {{ proveedor.ciudad }}{% if proveedor.region_provincia %}, {{ proveedor.region_provincia }}{% endif %}
+                        {% endif %}
+                    </td>
+                    <td>
+                        <i class="fas fa-user"></i> {{ proveedor.nombres }} {{ proveedor.apellidos }}
+                        {% if proveedor.telefono_contacto %}
+                            <br>
+                            <small><i class="fas fa-phone"></i> {{ proveedor.telefono_contacto }}</small>
+                        {% endif %}
+                        {% if proveedor.correo_electronico %}
+                            <br>
+                            <small><i class="fas fa-envelope"></i> {{ proveedor.correo_electronico }}</small>
+                        {% endif %}
+                    </td>
+                    <td>{{ proveedor.fecha_registro|date:"d-m-Y" }}</td>
+                    <td>
+                        <div class="dropdown">
+                            <button class="btn btn-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                Acciones
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li>
+                                    <a class="dropdown-item" href="javascript:void(0);" onclick="editarProveedor('{{ proveedor.id }}')">
+                                        <i class="fas fa-edit text-primary"></i> Editar
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="javascript:void(0);" onclick="mostrarConfirmacionEliminar('{{ proveedor.id }}', '{{ proveedor.nombre }}')">
+                                        <i class="fas fa-trash text-danger"></i> Borrar
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Aquí irían los modales (nuevo, editar, eliminar) -->
+
+<!-- Modal Nuevo Proveedor -->
+<div class="modal fade" id="modalNuevoProveedor" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Nuevo Proveedor</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                {% csrf_token %}
+                <!-- Tabs de navegación -->
+                <ul class="nav nav-tabs" id="proveedorTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="empresa-tab" data-bs-toggle="tab" 
+                                data-bs-target="#empresa" type="button" role="tab">
+                            Empresa
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="contacto-tab" data-bs-toggle="tab" 
+                                data-bs-target="#contacto" type="button" role="tab">
+                            Contacto
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="direccion-tab" data-bs-toggle="tab" 
+                                data-bs-target="#direccion" type="button" role="tab">
+                            Dirección
+                        </button>
+                    </li>
+                </ul>
+
+                <!-- Contenido de los tabs -->
+                <div class="tab-content mt-3" id="proveedorTabsContent">
+                    <!-- Tab Empresa -->
+                    <div class="tab-pane fade show active" id="empresa" role="tabpanel">
+                        <form id="formEmpresa">
+                            <div class="mb-3 row">
+                                <label class="col-sm-3 col-form-label text-end">Nombre</label>
+                                <div class="col-sm-9">
+                                    <input type="text" class="form-control" id="nombre" name="nombre" required>
+                                </div>
+                            </div>
+                            <div class="mb-3 row">
+                                <label class="col-sm-3 col-form-label text-end">Número de Impuesto</label>
+                                <div class="col-sm-9">
+                                    <input type="text" class="form-control" id="numero_impuesto" name="numero_impuesto">
+                                </div>
+                            </div>
+                            <div class="mb-3 row">
+                                <label class="col-sm-3 col-form-label text-end">Sitio Web</label>
+                                <div class="col-sm-9">
+                                    <input type="url" class="form-control" id="sitio_web" name="sitio_web">
+                                </div>
+                            </div>
+                            <div class="mb-3 row">
+                                <label class="col-sm-3 col-form-label text-end">Teléfono</label>
+                                <div class="col-sm-9">
+                                    <input type="tel" class="form-control" id="telefono_empresa" name="telefono_empresa" required>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Tab Contacto -->
+                    <div class="tab-pane fade" id="contacto" role="tabpanel">
+                        <form id="formContacto">
+                            <div class="mb-3 row">
+                                <label class="col-sm-3 col-form-label text-end">Nombres</label>
+                                <div class="col-sm-9">
+                                    <input type="text" class="form-control" id="nombres" name="nombres" required>
+                                </div>
+                            </div>
+                            <div class="mb-3 row">
+                                <label class="col-sm-3 col-form-label text-end">Apellidos</label>
+                                <div class="col-sm-9">
+                                    <input type="text" class="form-control" id="apellidos" name="apellidos" required>
+                                </div>
+                            </div>
+                            <div class="mb-3 row">
+                                <label class="col-sm-3 col-form-label text-end">Correo Electrónico</label>
+                                <div class="col-sm-9">
+                                    <input type="email" class="form-control" id="correo_electronico" name="correo_electronico" required>
+                                </div>
+                            </div>
+                            <div class="mb-3 row">
+                                <label class="col-sm-3 col-form-label text-end">Teléfono</label>
+                                <div class="col-sm-9">
+                                    <input type="tel" class="form-control" id="telefono_contacto" name="telefono_contacto" required>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Tab Dirección -->
+                    <div class="tab-pane fade" id="direccion" role="tabpanel">
+                        <form id="formDireccion">
+                            <div class="mb-3 row">
+                                <label class="col-sm-3 col-form-label text-end">Calle</label>
+                                <div class="col-sm-9">
+                                    <input type="text" class="form-control" id="calle" name="calle" required>
+                                </div>
+                            </div>
+                            <div class="mb-3 row">
+                                <label class="col-sm-3 col-form-label text-end">Ciudad</label>
+                                <div class="col-sm-9">
+                                    <input type="text" class="form-control" id="ciudad" name="ciudad" required>
+                                </div>
+                            </div>
+                            <div class="mb-3 row">
+                                <label class="col-sm-3 col-form-label text-end">Región/Provincia</label>
+                                <div class="col-sm-9">
+                                    <input type="text" class="form-control" id="region_provincia" name="region_provincia" required>
+                                </div>
+                            </div>
+                            <div class="mb-3 row">
+                                <label class="col-sm-3 col-form-label text-end">Código Postal</label>
+                                <div class="col-sm-9">
+                                    <input type="text" class="form-control" id="codigo_postal" name="codigo_postal" required>
+                                </div>
+                            </div>
+                            <div class="mb-3 row">
+                                <label class="col-sm-3 col-form-label text-end">País</label>
+                                <div class="col-sm-9">
+                                    <select class="form-select" id="pais" name="pais" required>
+                                        <option value="">Selecciona un país</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                <button type="button" class="btn btn-primary" onclick="registrarProveedor()">Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Editar Proveedor -->
+<div class="modal fade" id="modalEditarProveedor" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Editar Proveedor</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                {% csrf_token %}
+                <!-- Tabs de navegación -->
+                <ul class="nav nav-tabs" id="editarProveedorTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="editar-empresa-tab" data-bs-toggle="tab" 
+                                data-bs-target="#editar-empresa" type="button" role="tab">
+                            Empresa
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="editar-contacto-tab" data-bs-toggle="tab" 
+                                data-bs-target="#editar-contacto" type="button" role="tab">
+                            Contacto
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="editar-direccion-tab" data-bs-toggle="tab" 
+                                data-bs-target="#editar-direccion" type="button" role="tab">
+                            Dirección
+                        </button>
+                    </li>
+                </ul>
+
+                <!-- Contenido de los tabs -->
+                <div class="tab-content mt-3" id="editarProveedorTabsContent">
+                    <!-- Tab Empresa -->
+                    <div class="tab-pane fade show active" id="editar-empresa" role="tabpanel">
+                        <form id="formEditarEmpresa">
+                            <input type="hidden" id="proveedor_id_edit">
+                            <div class="mb-3 row">
+                                <label class="col-sm-3 col-form-label text-end">Nombre</label>
+                                <div class="col-sm-9">
+                                    <input type="text" class="form-control" id="nombre_edit" name="nombre" required>
+                                </div>
+                            </div>
+                            <div class="mb-3 row">
+                                <label class="col-sm-3 col-form-label text-end">Número de Impuesto</label>
+                                <div class="col-sm-9">
+                                    <input type="text" class="form-control" id="numero_impuesto_edit" name="numero_impuesto">
+                                </div>
+                            </div>
+                            <div class="mb-3 row">
+                                <label class="col-sm-3 col-form-label text-end">Sitio Web</label>
+                                <div class="col-sm-9">
+                                    <input type="url" class="form-control" id="sitio_web_edit" name="sitio_web">
+                                </div>
+                            </div>
+                            <div class="mb-3 row">
+                                <label class="col-sm-3 col-form-label text-end">Teléfono</label>
+                                <div class="col-sm-9">
+                                    <input type="tel" class="form-control" id="telefono_empresa_edit" name="telefono_empresa" required>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Tab Contacto -->
+                    <div class="tab-pane fade" id="editar-contacto" role="tabpanel">
+                        <form id="formEditarContacto">
+                            <div class="mb-3 row">
+                                <label class="col-sm-3 col-form-label text-end">Nombres</label>
+                                <div class="col-sm-9">
+                                    <input type="text" class="form-control" id="nombres_edit" name="nombres" required>
+                                </div>
+                            </div>
+                            <div class="mb-3 row">
+                                <label class="col-sm-3 col-form-label text-end">Apellidos</label>
+                                <div class="col-sm-9">
+                                    <input type="text" class="form-control" id="apellidos_edit" name="apellidos" required>
+                                </div>
+                            </div>
+                            <div class="mb-3 row">
+                                <label class="col-sm-3 col-form-label text-end">Correo Electrónico</label>
+                                <div class="col-sm-9">
+                                    <input type="email" class="form-control" id="correo_electronico_edit" name="correo_electronico" required>
+                                </div>
+                            </div>
+                            <div class="mb-3 row">
+                                <label class="col-sm-3 col-form-label text-end">Teléfono</label>
+                                <div class="col-sm-9">
+                                    <input type="tel" class="form-control" id="telefono_contacto_edit" name="telefono_contacto" required>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Tab Dirección -->
+                    <div class="tab-pane fade" id="editar-direccion" role="tabpanel">
+                        <form id="formEditarDireccion">
+                            <div class="mb-3 row">
+                                <label class="col-sm-3 col-form-label text-end">Calle</label>
+                                <div class="col-sm-9">
+                                    <input type="text" class="form-control" id="calle_edit" name="calle" required>
+                                </div>
+                            </div>
+                            <div class="mb-3 row">
+                                <label class="col-sm-3 col-form-label text-end">Ciudad</label>
+                                <div class="col-sm-9">
+                                    <input type="text" class="form-control" id="ciudad_edit" name="ciudad" required>
+                                </div>
+                            </div>
+                            <div class="mb-3 row">
+                                <label class="col-sm-3 col-form-label text-end">Región/Provincia</label>
+                                <div class="col-sm-9">
+                                    <input type="text" class="form-control" id="region_provincia_edit" name="region_provincia" required>
+                                </div>
+                            </div>
+                            <div class="mb-3 row">
+                                <label class="col-sm-3 col-form-label text-end">Código Postal</label>
+                                <div class="col-sm-9">
+                                    <input type="text" class="form-control" id="codigo_postal_edit" name="codigo_postal" required>
+                                </div>
+                            </div>
+                            <div class="mb-3 row">
+                                <label class="col-sm-3 col-form-label text-end">País</label>
+                                <div class="col-sm-9">
+                                    <select class="form-select" id="pais_edit" name="pais" required>
+                                        <option value="">Selecciona un país</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                <button type="button" class="btn btn-primary" onclick="actualizarProveedor()">Guardar cambios</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Confirmar Eliminar -->
+
+<!-- Scripts -->
+<script>
+function abrirModalNuevoProveedor() {
+    cargarPaises();
+    const modal = new bootstrap.Modal(document.getElementById('modalNuevoProveedor'));
+    modal.show();
+}
+
+async function cargarPaises() {
+    try {
+        const response = await fetch('https://restcountries.com/v3.1/all');
+        const paises = await response.json();
+        
+        const selectPais = document.getElementById('pais');
+        selectPais.innerHTML = '<option value="">Selecciona un país</option>';
+        
+        paises
+            .sort((a, b) => a.name.common.localeCompare(b.name.common))
+            .forEach(pais => {
+                const option = document.createElement('option');
+                option.value = pais.name.common;
+                option.textContent = pais.name.common;
+                selectPais.appendChild(option);
+            });
+    } catch (error) {
+        console.error('Error al cargar países:', error);
+    }
+}
+
+async function registrarProveedor() {
+    try {
+        const campos = {
+            nombre: document.getElementById('nombre').value.trim(),
+            numero_impuesto: document.getElementById('numero_impuesto').value.trim(),
+            sitio_web: document.getElementById('sitio_web').value.trim(),
+            telefono_empresa: document.getElementById('telefono_empresa').value.trim(),
+            nombres: document.getElementById('nombres').value.trim(),
+            apellidos: document.getElementById('apellidos').value.trim(),
+            correo_electronico: document.getElementById('correo_electronico').value.trim(),
+            telefono_contacto: document.getElementById('telefono_contacto').value.trim(),
+            calle: document.getElementById('calle').value.trim(),
+            ciudad: document.getElementById('ciudad').value.trim(),
+            region_provincia: document.getElementById('region_provincia').value.trim(),
+            codigo_postal: document.getElementById('codigo_postal').value.trim(),
+            pais: document.getElementById('pais').value.trim()
+        };
+
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+        const response = await fetch('/guardar_proveedor/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify(campos)
+        });
+
+        const result = await response.json();
+        
+        if (result.status === 'success') {
+            bootstrap.Modal.getInstance(document.getElementById('modalNuevoProveedor')).hide();
+            location.reload();
+        } else {
+            throw new Error(result.message || 'Error al guardar el proveedor');
+        }
+        
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error al guardar el proveedor: ' + error.message);
+    }
+}
+
+async function editarProveedor(proveedorId) {
+    try {
+        // Primero obtenemos los datos del proveedor
+        const response = await fetch(`/proveedor_detalles/${proveedorId}/`);
+        if (!response.ok) throw new Error('Error al cargar los datos del proveedor');
+        
+        const data = await response.json();
+        if (data.status !== 'success') throw new Error(data.message);
+        
+        const proveedor = data.proveedor;
+        
+        // Cargar países y esperar a que termine
+        await cargarPaises('pais_edit');
+        
+        // Llenar los campos del formulario
+        document.getElementById('proveedor_id_edit').value = proveedorId;
+        
+        // Datos de Empresa
+        document.getElementById('nombre_edit').value = proveedor.nombre;
+        document.getElementById('numero_impuesto_edit').value = proveedor.numero_impuesto || '';
+        document.getElementById('sitio_web_edit').value = proveedor.sitio_web || '';
+        document.getElementById('telefono_empresa_edit').value = proveedor.telefono_empresa;
+        
+        // Datos de Contacto
+        document.getElementById('nombres_edit').value = proveedor.nombres;
+        document.getElementById('apellidos_edit').value = proveedor.apellidos;
+        document.getElementById('correo_electronico_edit').value = proveedor.correo_electronico;
+        document.getElementById('telefono_contacto_edit').value = proveedor.telefono_contacto;
+        
+        // Datos de Dirección
+        document.getElementById('calle_edit').value = proveedor.calle;
+        document.getElementById('ciudad_edit').value = proveedor.ciudad;
+        document.getElementById('region_provincia_edit').value = proveedor.region_provincia;
+        document.getElementById('codigo_postal_edit').value = proveedor.codigo_postal;
+        
+        // Esperar un momento para asegurarnos de que los países se cargaron
+        setTimeout(() => {
+            const paisSelect = document.getElementById('pais_edit');
+            paisSelect.value = proveedor.pais;
+            
+            // Si el país no está en la lista, agregarlo
+            if (paisSelect.value !== proveedor.pais) {
+                const option = new Option(proveedor.pais, proveedor.pais);
+                paisSelect.add(option);
+                paisSelect.value = proveedor.pais;
+            }
+        }, 500);
+        
+        // Abrir el modal
+        const modal = new bootstrap.Modal(document.getElementById('modalEditarProveedor'));
+        modal.show();
+        
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error al cargar los datos del proveedor: ' + error.message);
+    }
+}
+
+async function actualizarProveedor() {
+    try {
+        const proveedorId = document.getElementById('proveedor_id_edit').value;
+        const campos = {
+            nombre: document.getElementById('nombre_edit').value.trim(),
+            numero_impuesto: document.getElementById('numero_impuesto_edit').value.trim(),
+            sitio_web: document.getElementById('sitio_web_edit').value.trim(),
+            telefono_empresa: document.getElementById('telefono_empresa_edit').value.trim(),
+            nombres: document.getElementById('nombres_edit').value.trim(),
+            apellidos: document.getElementById('apellidos_edit').value.trim(),
+            correo_electronico: document.getElementById('correo_electronico_edit').value.trim(),
+            telefono_contacto: document.getElementById('telefono_contacto_edit').value.trim(),
+            calle: document.getElementById('calle_edit').value.trim(),
+            ciudad: document.getElementById('ciudad_edit').value.trim(),
+            region_provincia: document.getElementById('region_provincia_edit').value.trim(),
+            codigo_postal: document.getElementById('codigo_postal_edit').value.trim(),
+            pais: document.getElementById('pais_edit').value.trim()
+        };
+
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+        const response = await fetch(`/editar_proveedor/${proveedorId}/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify(campos)
+        });
+
+        const result = await response.json();
+        
+        if (result.status === 'success') {
+            bootstrap.Modal.getInstance(document.getElementById('modalEditarProveedor')).hide();
+            location.reload();
+        } else {
+            throw new Error(result.message || 'Error al actualizar el proveedor');
+        }
+        
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error al actualizar el proveedor: ' + error.message);
+    }
+}
+
+// Validaciones en tiempo real mientras el usuario escribe
+function validarFormularioProveedor() {
+    // Validar número de impuesto (solo números)
+    const numeroImpuesto = document.getElementById('numero_impuesto');
+    numeroImpuesto.addEventListener('input', function() {
+        this.value = this.value.replace(/[^0-9]/g, '');
+    });
+
+    // Validar teléfonos (números y + al inicio)
+    const telefonoEmpresa = document.getElementById('telefono_empresa');
+    const telefonoContacto = document.getElementById('telefono_contacto');
+
+    [telefonoEmpresa, telefonoContacto].forEach(input => {
+        input.addEventListener('input', function() {
+            let valor = this.value.replace(/[^\d+]/g, '');
+            // Asegurar que + solo esté al inicio
+            if (valor.lastIndexOf('+') > 0) {
+                valor = valor.replace(/\+/g, '');
+            }
+            this.value = valor;
+        });
+    });
+
+    // Validar código postal (solo números)
+    const codigoPostal = document.getElementById('codigo_postal');
+    codigoPostal.addEventListener('input', function() {
+        this.value = this.value.replace(/[^0-9]/g, '');
+    });
+}
+
+// Validación antes de enviar el formulario
+function validarAntesDeSalvar() {
+    const numeroImpuesto = document.getElementById('numero_impuesto').value;
+    const telefonoEmpresa = document.getElementById('telefono_empresa').value;
+    const telefonoContacto = document.getElementById('telefono_contacto').value;
+    const codigoPostal = document.getElementById('codigo_postal').value;
+
+    // Validar número de impuesto
+    if (!/^\d+$/.test(numeroImpuesto)) {
+        alert('El número de impuesto debe contener solo números');
+        return false;
+    }
+
+    // Validar teléfonos
+    const telefonoRegex = /^\+?[\d]{9,15}$/;
+    if (!telefonoRegex.test(telefonoEmpresa)) {
+        alert('El teléfono de empresa debe tener un formato válido (solo números y + al inicio)');
+        return false;
+    }
+
+    if (!telefonoRegex.test(telefonoContacto)) {
+        alert('El teléfono de contacto debe tener un formato válido (solo números y + al inicio)');
+        return false;
+    }
+
+    // Validar código postal
+    if (!/^\d+$/.test(codigoPostal)) {
+        alert('El código postal debe contener solo números');
+        return false;
+    }
+
+    return true;
+}
+
+// Inicializar validaciones cuando se carga la página
+document.addEventListener('DOMContentLoaded', function() {
+    validarFormularioProveedor();
+});
+</script>
+
+{% endblock %}

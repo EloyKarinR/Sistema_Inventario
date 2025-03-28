@@ -1,0 +1,120 @@
+{% extends 'Inventario/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Editar Compra #{{ compra.numero_compra }}</h2>
+    
+    {% csrf_token %}
+    <div class="row">
+        <div class="col-md-4">
+            <div class="form-group">
+                <label>Número de Compra</label>
+                <input type="text" id="numero_compra" class="form-control" value="{{ compra.numero_compra }}">
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="form-group">
+                <label>Proveedor</label>
+                <select id="proveedor" class="form-control">
+                    {% for proveedor in proveedores %}
+                        <option value="{{ proveedor.id }}" 
+                            {% if proveedor.id == compra.proveedor.id %}selected{% endif %}>
+                            {{ proveedor.nombre }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="form-group">
+                <label>Fecha</label>
+                <input type="date" id="fecha" class="form-control" value="{{ compra.fecha|date:'Y-m-d' }}">
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-3">
+        <div class="col-md-4">
+            <div class="form-group">
+                <label>Neto</label>
+                <input type="number" 
+                       id="neto" 
+                       class="form-control" 
+                       value="{{ compra.neto|floatformat:0 }}"
+                       step="1">
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="form-group">
+                <label>IVA</label>
+                <input type="number" 
+                       id="iva" 
+                       class="form-control" 
+                       value="{{ compra.iva|floatformat:0 }}"
+                       step="1">
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="form-group">
+                <label>Total</label>
+                <input type="number" 
+                       id="total" 
+                       class="form-control" 
+                       value="{{ compra.total|floatformat:0 }}"
+                       step="1">
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-3">
+        <div class="col-12">
+            <button class="btn btn-primary" onclick="guardarEdicion()">
+                <i class="fas fa-save"></i> Guardar Cambios
+            </button>
+            <a href="/historial_compras/" class="btn btn-secondary">
+                <i class="fas fa-times"></i> Cancelar
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+async function guardarEdicion() {
+    try {
+        const datos = {
+            numero_compra: document.getElementById('numero_compra').value,
+            proveedor: document.getElementById('proveedor').value,
+            fecha: document.getElementById('fecha').value,
+            neto: document.getElementById('neto').value,
+            iva: document.getElementById('iva').value,
+            total: document.getElementById('total').value
+        };
+
+        const response = await fetch(`/actualizar_compra/{{ compra.id }}/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: JSON.stringify(datos)
+        });
+
+        const result = await response.json();
+        
+        if (result.status === 'success') {
+            alert('Compra actualizada exitosamente');
+            window.location.href = '/historial_compras/';
+        } else {
+            alert('Error al actualizar la compra: ' + result.message);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error al actualizar la compra: ' + error.message);
+    }
+}
+</script>
+{% endblock %}

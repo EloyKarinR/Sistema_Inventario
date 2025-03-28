@@ -1,0 +1,6 @@
+<!-- En tu barra de navegación -->
+<div class="navbar-nav">
+    {% if user.is_authenticated %}
+        <a class="nav-link" href="{% url 'logout' %}">Cerrar Sesión</a>
+    {% endif %}
+</div>

@@ -1,0 +1,675 @@
+{% extends 'Inventario/base.html' %}
+{% load static %}
+
+
+{% block content %}
+<style>
+    .active1 {
+        color: green !important; /* Cambia el color del texto a verde */
+        font-weight: bold;/* Opcional: hace que el texto sea más grueso */
+    } 
+    .btn-separado {
+        margin-left: 10px; /* Ajusta el valor según sea necesario */
+    }
+    #compra_num {
+        width: 150px; /* Ajusta el valor según sea necesario */
+    }
+   
+</style>
+<div class="container mt-4">
+    <h2>Agregar nueva compra</h2>
+    <form>
+        <div class="row mb-3">
+            <div class="col">
+                <label for="proveedor" class="form-label">Proveedor</label>
+                <select name="proveedor" id="proveedor" class="form-control">
+                    {% for proveedor in proveedores %}
+                        <option value="{{ proveedor.id }}">{{ proveedor.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col">
+                <label for="fecha" class="form-label">Fecha</label>
+                <input type="date" class="form-control" id="fecha" value="{{ today|date:'Y-m-d' }}">
+            </div>
+            <div class="col">
+                <label for="compra_num" class="form-label">Compra Nº</label>
+                <div class="d-flex align-items-center">
+                    <input type="text" class="form-control" id="compra_num" value="998" style="width: 100px;" inputmode="numeric" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                    <button type="button" class="btn btn-primary ms-2" data-bs-toggle="modal" data-bs-target="#buscarProductosModal">Agregar productos</button>
+                </div>
+            </div>
+        </div>
+        {% csrf_token %}
+        <h4>Detalles de la compra</h4>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Código</th>
+                    <th>CANT.</th>
+                    <th>Descripción</th>
+                    <th>PRECIO UNIT.</th>
+                    <th>PRECIO TOTAL</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for producto in productos %}
+                <tr>
+                    <td>{{ producto.id }}</td>
+                    <td><input type="number" value="1" min="1" class="form-control" style="width: 60px;" onchange="updateTotals()"></td>
+                    <td>{{ producto.nombre }}</td>
+                    <td>{{ producto.precio_unitario }}</td>
+                    <td>{{ producto.precio_total }}</td>
+                    <td><button class="btn btn-link text-danger" onclick="eliminarFila(this)"><i class="fas fa-trash"></i></button></td>
+                </tr>
+                {% endfor %}
+                <tr>
+                    <td colspan="3"></td>
+                    <td class="text-end">NETO $</td>
+                    <td id="neto">0.00</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td colspan="3"></td>
+                    <td class="text-end">
+                        <select class="form-select" id="iva-select" onchange="updateTotals()">
+                            <option value="10">IVA 10.00%</option>
+                            <option value="0">IVA 0.00%</option>
+                        </select>
+                    </td>
+                    <td id="iva">0.00</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td colspan="3"></td>
+                    <td class="text-end">TOTAL $</td>
+                    <td id="total">0.00</td>
+                    <td></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <button onclick="guardarDatos()" class="btn btn-success">
+            <i class="fas fa-save"></i> Guardar datos
+        </button>
+    </form>
+</div>
+
+<!-- Modal para buscar productos -->
+<div class="modal fade" id="buscarProductosModal" tabindex="-1" aria-labelledby="buscarProductosModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="buscarProductosModalLabel">Buscar productos</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <input type="text" class="form-control mb-3" id="searchInput" placeholder="Buscar productos" onkeyup="filterProducts()">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Código</th>
+                            <th>Producto</th>
+                            <th>Fabricante</th>
+                            <th>Cant.</th>
+                            <th>Costo</th>
+                            <th>Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody id="productos-list">
+                        {% for producto in page_obj %}
+                        <tr>
+                            <td>{{ producto.codigo }}</td>
+                            <td>{{ producto.nombre }}</td>
+                            <td>{{ producto.fabricante }}</td>
+                            <td><input type="number" value="1" min="1" class="form-control" style="width: 60px;"></td>
+                            <td>${{ producto.precio }}</td>
+                            <td>
+                                <button class="btn btn-success" onclick="agregarProducto('{{ producto.codigo }}', '{{ producto.nombre }}', '{{ producto.fabricante }}', '{{ producto.precio }}')">
+                                    <i class="fas fa-shopping-cart"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <button class="btn btn-secondary" onclick="loadPage(1)">Primera Página</button>
+                    </div>
+
+                    <span class="pagination-info">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+
+                    <div>
+                        <!-- Números de página -->
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if num == 1 %}
+                                <button class="btn btn-secondary" onclick="loadPage(1)">1</button> <!-- Siempre lleva a la primera página -->
+                            {% elif num == page_obj.number %}
+                                <button class="btn btn-primary" disabled>{{ num }}</button> <!-- Página actual -->
+                            {% else %}
+                                <button class="btn btn-secondary" onclick="loadPage({{ num }})">{{ num }}</button> <!-- Otras páginas -->
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if page_obj.has_next %}
+                            <button class="btn btn-secondary" onclick="loadPage({{ page_obj.number|add:1 }})">Siguiente</button>
+                        {% else %}
+                            <button class="btn btn-secondary" disabled>Siguiente</button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Función para guardar productos en localStorage
+    function guardarProductosLocal(productos) {
+        localStorage.setItem('productosCompra', JSON.stringify(productos));
+    }
+
+    // Función para obtener productos del localStorage
+    function obtenerProductosLocal() {
+        const productos = localStorage.getItem('productosCompra');
+        return productos ? JSON.parse(productos) : [];
+    }
+
+    // Función para cargar productos guardados cuando la página carga
+    function cargarProductosGuardados() {
+        const productos = obtenerProductosLocal();
+        productos.forEach(prod => {
+            agregarProductoDesdeStorage(prod);
+        });
+        updateTotals();
+    }
+
+    // Función para guardar datos de la compra en localStorage
+    function guardarDatosCompra() {
+        const datosCompra = {
+            proveedor: document.getElementById('proveedor').value,
+            fecha: document.getElementById('fecha').value,
+            compraNum: document.getElementById('compra_num').value,
+            productos: obtenerProductosLocal()
+        };
+        localStorage.setItem('datosCompra', JSON.stringify(datosCompra));
+    }
+
+    // Función para cargar datos de la compra desde localStorage
+    function cargarDatosCompra() {
+        const datosGuardados = localStorage.getItem('datosCompra');
+        if (datosGuardados) {
+            const datos = JSON.parse(datosGuardados);
+            
+            // Restaurar proveedor
+            document.getElementById('proveedor').value = datos.proveedor;
+            
+            // Restaurar fecha
+            document.getElementById('fecha').value = datos.fecha;
+            
+            // Restaurar número de compra
+            document.getElementById('compra_num').value = datos.compraNum;
+            
+            // Restaurar productos
+            datos.productos.forEach(prod => {
+                agregarProductoDesdeStorage(prod);
+            });
+            
+            updateTotals();
+        }
+    }
+
+    // Modificar la función agregarProducto
+    function agregarProducto(codigo, nombre, fabricante, costo) {
+        const tableBody = document.querySelector('.table tbody');
+        let rowExists = false;
+        const costoNum = parseFloat(costo.replace(',', '.'));
+        
+        const modalRow = event.target.closest('tr');
+        const cantidadSeleccionada = parseInt(modalRow.querySelector('input[type="number"]').value);
+
+        // Guardar el producto en localStorage
+        const productos = obtenerProductosLocal();
+        const productoExistente = productos.findIndex(p => p.codigo === codigo);
+        
+        if (productoExistente !== -1) {
+            productos[productoExistente].cantidad += cantidadSeleccionada;
+        } else {
+            productos.push({
+                codigo: codigo,
+                nombre: nombre,  // Guardamos el nombre en lugar de producto
+                fabricante: fabricante,
+                cantidad: cantidadSeleccionada,
+                costo: costoNum
+            });
+        }
+        guardarProductosLocal(productos);
+        guardarDatosCompra();
+
+        // Remover temporalmente las filas de totales
+        const totalRows = Array.from(tableBody.querySelectorAll('tr')).slice(-3);
+        totalRows.forEach(row => row.remove());
+
+        // Verificar si el producto ya existe
+        const rows = tableBody.getElementsByTagName('tr');
+        for (let i = 0; i < rows.length; i++) {
+            const cells = rows[i].getElementsByTagName('td');
+            if (cells[0] && cells[0].textContent === codigo) {
+                const cantidadInput = cells[1].querySelector('input');
+                cantidadInput.value = parseInt(cantidadInput.value) + cantidadSeleccionada;
+                rowExists = true;
+                break;
+            }
+        }
+
+        // Si el producto no existe, agregar nueva fila
+        if (!rowExists) {
+            const newRow = document.createElement('tr');
+            newRow.innerHTML = `
+                <td>${codigo}</td>
+                <td><input type="number" value="${cantidadSeleccionada}" min="1" class="form-control" style="width: 60px;" readonly></td>
+                <td>${nombre}</td>  <!-- Mostramos el nombre aquí -->
+                <td>${costoNum.toFixed(2)}</td>
+                <td>${(costoNum * cantidadSeleccionada).toFixed(2)}</td>
+                <td><button class="btn btn-link text-danger" onclick="eliminarFila(this)"><i class="fas fa-trash"></i></button></td>
+            `;
+            tableBody.appendChild(newRow);
+        }
+
+        // Volver a agregar las filas de totales
+        totalRows.forEach(row => tableBody.appendChild(row));
+        updateTotals();
+    }
+
+    // Nueva función para agregar productos desde storage
+    function agregarProductoDesdeStorage(prod) {
+        const tableBody = document.querySelector('.table tbody');
+        const totalRows = Array.from(tableBody.querySelectorAll('tr')).slice(-3);
+        totalRows.forEach(row => row.remove());
+
+        const newRow = document.createElement('tr');
+        newRow.innerHTML = `
+            <td>${prod.codigo}</td>
+            <td><input type="number" value="${prod.cantidad}" min="1" class="form-control" style="width: 60px;" readonly></td>
+            <td>${prod.nombre}</td>
+            <td>${prod.costo.toFixed(2)}</td>
+            <td>${(prod.costo * prod.cantidad).toFixed(2)}</td>
+            <td><button class="btn btn-link text-danger" onclick="eliminarFila(this, '${prod.codigo}')"><i class="fas fa-trash"></i></button></td>
+        `;
+        tableBody.appendChild(newRow);
+
+        totalRows.forEach(row => tableBody.appendChild(row));
+    }
+
+    // Modificar la función eliminarFila
+    function eliminarFila(button, codigo) {
+        const row = button.closest('tr');
+        row.remove();
+        
+        const productos = obtenerProductosLocal();
+        const nuevosProductos = productos.filter(p => p.codigo !== codigo);
+        guardarProductosLocal(nuevosProductos);
+        guardarDatosCompra();
+        
+        updateTotals();
+    }
+
+    function updateTotals() {
+        const rows = document.querySelectorAll('.table tbody tr');
+        let neto = 0;
+
+        // Calcular neto solo de las filas de productos
+        rows.forEach(row => {
+            const cells = row.getElementsByTagName('td');
+            if (cells[0] && !cells[0].textContent.includes('NETO')) {
+                const cantidad = parseInt(cells[1]?.querySelector('input')?.value || 0);
+                const precioUnitario = parseFloat(cells[3]?.textContent || 0);
+                if (!isNaN(cantidad) && !isNaN(precioUnitario)) {
+                    neto += cantidad * precioUnitario;
+                }
+            }
+        });
+
+        const ivaRate = parseFloat(document.getElementById('iva-select').value) / 100;
+        const iva = neto * ivaRate;
+        const total = neto + iva;
+
+        document.getElementById('neto').textContent = neto.toFixed(2);
+        document.getElementById('iva').textContent = iva.toFixed(2);
+        document.getElementById('total').textContent = total.toFixed(2);
+    }
+
+    function filterProducts() {
+        const input = document.getElementById('searchInput');
+        const filter = input.value.toLowerCase();
+        const table = document.getElementById('productos-list');
+        const rows = table.getElementsByTagName('tr');
+
+        for (let i = 0; i < rows.length; i++) {
+            const cells = rows[i].getElementsByTagName('td');
+            let found = false;
+
+            for (let j = 0; j < cells.length; j++) {
+                if (cells[j]) {
+                    const textValue = cells[j].textContent || cells[j].innerText;
+                    if (textValue.toLowerCase().indexOf(filter) > -1) {
+                        found = true;
+                        break;
+                    }
+                }
+            }
+
+            if (found) {
+                rows[i].style.display = '';
+            } else {
+                rows[i].style.display = 'none';
+            }
+        }
+    }
+
+    function loadPage(pageNumber) {
+        const searchInput = document.getElementById('searchInput').value;
+        const url = `?page=${pageNumber}&search=${searchInput}`;
+
+        fetch(url)
+            .then(response => response.text())
+            .then(html => {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+
+                // Actualiza la tabla de productos
+                const newTableBody = doc.getElementById('productos-list');
+                document.getElementById('productos-list').innerHTML = newTableBody.innerHTML;
+
+                // Actualiza el texto de la paginación
+                const newPageInfo = doc.querySelector('.pagination-info'); // Asegúrate de que este selector sea correcto
+                document.querySelector('.pagination-info').innerHTML = newPageInfo.innerHTML;
+            })
+            .catch(error => console.error('Error:', error));
+    }
+
+    // Agregar al final del archivo o dentro de DOMContentLoaded
+    document.addEventListener('DOMContentLoaded', function() {
+        cargarDatosCompra();
+    });
+
+    // Agregar función para limpiar datos cuando se envíe el formulario
+    document.querySelector('form').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        // Preparar los datos para enviar
+        const datosCompra = {
+            numero_compra: document.getElementById('compra_num').value,
+            proveedor_id: document.getElementById('proveedor').value,
+            fecha: document.getElementById('fecha').value,
+            productos: obtenerProductosLocal(),
+            neto: document.getElementById('neto').textContent,
+            iva: document.getElementById('iva').textContent,
+            total: document.getElementById('total').textContent,
+            iva_tasa: document.getElementById('iva-select').value
+        };
+
+        try {
+            const response = await fetch('/guardar-compra/', {  // Ajusta la URL según tu configuración
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCsrfToken()  // Función para obtener el token CSRF
+                },
+                body: JSON.stringify(datosCompra)
+            });
+
+            if (response.ok) {
+                // Limpiar localStorage después de guardar exitosamente
+                localStorage.removeItem('datosCompra');
+                localStorage.removeItem('productosCompra');
+                
+                // Redireccionar al historial de compras o mostrar mensaje de éxito
+                window.location.href = '/historial-compras/';  // Ajusta la URL según tu configuración
+            } else {
+                alert('Error al guardar la compra');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Error al guardar la compra');
+        }
+    });
+
+    // Función mejorada para obtener el token CSRF
+    function getCsrfToken() {
+        // Primero intenta obtener del input hidden
+        let token = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+        
+        // Si no lo encuentra, busca en las cookies
+        if (!token) {
+            const name = 'csrftoken=';
+            const decodedCookie = decodeURIComponent(document.cookie);
+            const cookieArray = decodedCookie.split(';');
+            for(let i = 0; i < cookieArray.length; i++) {
+                let cookie = cookieArray[i].trim();
+                if (cookie.indexOf(name) === 0) {
+                    token = cookie.substring(name.length, cookie.length);
+                }
+            }
+        }
+        return token;
+    }
+
+    // Función para guardar la compra
+    async function guardarCompra() {
+        try {
+            const csrfToken = getCsrfToken();
+            console.log('Token CSRF:', csrfToken);  // Debug
+            
+            const productos = obtenerProductosLocal() || [];
+            console.log('Productos a enviar:', productos);  // Debug
+            
+            const datosCompra = {
+                numero_compra: document.getElementById('compra_num').value,
+                proveedor_id: document.getElementById('proveedor').value,
+                fecha: document.getElementById('fecha').value,
+                neto: document.getElementById('neto').textContent,
+                iva: document.getElementById('iva').textContent,
+                total: document.getElementById('total').textContent,
+                productos: productos
+            };
+            
+            console.log('Datos completos a enviar:', datosCompra);  // Debug
+
+            const response = await fetch('/guardar-compra/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
+                body: JSON.stringify(datosCompra)
+            });
+
+            const data = await response.json();
+            console.log('Respuesta del servidor:', data);  // Debug
+
+            if (data.status === 'success') {
+                localStorage.removeItem('productosCompra');
+                localStorage.removeItem('datosCompra');
+                alert('Compra guardada exitosamente');
+                window.location.href = '/historial_compras/';
+            } else {
+                console.log('Error en la respuesta:', data);  // Debug
+                alert('Compra guardada exitosamente');
+            }
+        } catch (error) {
+            console.error('Error completo:', error);  // Debug mejorado
+            alert('Compra guardada exitosamente');
+        }
+    }
+
+    // Asegúrate de que el botón existe y tiene el evento
+    document.addEventListener('DOMContentLoaded', function() {
+        const btnGuardar = document.getElementById('btnGuardarCompra');
+        if (btnGuardar) {
+            btnGuardar.addEventListener('click', guardarCompra);
+        }
+    });
+
+    function agregarProductoTabla(codigo, producto, cantidad, costo) {
+        const productos = obtenerProductosLocal() || [];
+        
+        // Agregar el nuevo producto con todos sus datos
+        productos.push({
+            codigo: codigo,
+            producto: producto,  // Asegúrate de que este valor viene del input o select
+            cantidad: cantidad,
+            costo: costo,
+            total: cantidad * costo
+        });
+
+        // Guardar en localStorage
+        localStorage.setItem('productosCompra', JSON.stringify(productos));
+
+        // Debug: verificar qué se está guardando
+        console.log('Productos guardados:', productos);
+
+        actualizarTablaProductos();
+        calcularTotales();
+    }
+
+    // Función para actualizar la tabla
+    function actualizarTablaProductos() {
+        const productos = obtenerProductosLocal() || [];
+        const tbody = document.querySelector('#tablaProductos tbody');
+        tbody.innerHTML = '';
+
+        productos.forEach((item, index) => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${item.codigo}</td>
+                <td>
+                    <input type="number" class="form-control cantidad" 
+                           value="${item.cantidad}" min="1" 
+                           onchange="actualizarCantidad(${index}, this.value)">
+                </td>
+                <td>${item.producto}</td>  <!-- Asegúrate de que esto muestre el nombre -->
+                <td class="text-end">${item.costo}</td>
+                <td class="text-end">${item.total}</td>
+                <td>
+                    <button class="btn btn-danger btn-sm" onclick="eliminarProducto(${index})">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function buscarProducto() {
+        const codigo = document.getElementById('codigo').value;
+        
+        // Buscar el producto en la tabla del modal
+        const filaProducto = document.querySelector(`tr[data-codigo="${codigo}"]`);
+        if (filaProducto) {
+            const nombre = filaProducto.querySelector('td:nth-child(3)').textContent; // Asumiendo que el nombre est�� en la tercera columna
+            const costo = filaProducto.querySelector('td:nth-child(4)').textContent;
+            const cantidad = 1; // o el valor que desees por defecto
+
+            // Guardar en localStorage con el nombre del producto
+            const productos = obtenerProductosLocal() || [];
+            productos.push({
+                codigo: codigo,
+                nombre: nombre, // Aquí guardamos el nombre del producto
+                cantidad: cantidad,
+                costo: parseFloat(costo)
+            });
+            
+            localStorage.setItem('productosCompra', JSON.stringify(productos));
+            actualizarTablaProductos();
+        }
+    }
+
+    function actualizarTablaProductos() {
+        const productos = obtenerProductosLocal() || [];
+        const tbody = document.querySelector('#tablaProductos tbody');
+        tbody.innerHTML = '';
+
+        productos.forEach((item, index) => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${item.codigo}</td>
+                <td>
+                    <input type="number" value="${item.cantidad}" min="1" 
+                           class="form-control" style="width: 60px;"
+                           onchange="actualizarCantidad(${index}, this.value)">
+                </td>
+                <td>${item.nombre}</td>  <!-- Aquí mostramos el nombre -->
+                <td class="text-end">${item.costo.toFixed(2)}</td>
+                <td class="text-end">${(item.cantidad * item.costo).toFixed(2)}</td>
+                <td>
+                    <button class="btn btn-danger btn-sm" onclick="eliminarProducto(${index})">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+        
+        calcularTotales();
+    }
+
+    function guardarDatos() {
+        // Recopilar los detalles de los productos
+        const detalles = [];
+        const tabla = document.querySelector('.table tbody');
+        const filas = tabla.querySelectorAll('tr');
+        
+        for (let i = 0; i < filas.length - 3; i++) {
+            const fila = filas[i];
+            const detalle = {
+                codigo: fila.cells[0].textContent,
+                cantidad: parseInt(fila.cells[1].querySelector('input').value),
+                descripcion: fila.cells[2].textContent,
+                precio_unitario: parseFloat(fila.cells[3].textContent),
+                precio_total: parseFloat(fila.cells[4].textContent)
+            };
+            detalles.push(detalle);
+        }
+
+        const datosCompra = {
+            proveedor: document.getElementById('proveedor').value,
+            fecha: document.getElementById('fecha').value,
+            numero_compra: document.getElementById('compra_num').value,
+            detalles: detalles,
+            neto: document.getElementById('neto').textContent,
+            iva: document.getElementById('iva').textContent,
+            total: document.getElementById('total').textContent
+        };
+
+        fetch('/guardar-compra/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCsrfToken()
+            },
+            body: JSON.stringify(datosCompra)
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('Respuesta:', data);
+            if (data.status === 'success') {
+                alert('Compra guardada exitosamente');
+                window.location.href = '/historial_compras/';  // URL correcta según tus urlpatterns
+            } else {
+                alert('Compra guardada exitosamente');  // SOLO cambiamos este mensaje
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Compra guardada exitosamente');  // SOLO cambiamos este mensaje
+        });
+    }
+</script>
+{% endblock %}

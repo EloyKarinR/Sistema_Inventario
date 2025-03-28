@@ -1,0 +1,343 @@
+{% extends 'Inventario/base.html' %}
+{% load static %}
+
+{% block content %}
+<style>
+    .active3 {
+        color: green !important; /* Cambia el color del texto a verde */
+        font-weight: bold;/* Opcional: hace que el texto sea más grueso */
+    } 
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    th, td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        text-align: left;
+    }
+
+    th {
+        background-color: #f2f2f2;
+    }
+
+    /* Nuevos estilos para la barra de herramientas */
+    .toolbar {
+        margin-bottom: 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .search-section {
+        display: flex;
+        gap: 10px;
+    }
+
+    .search-section input,
+    .search-section select {
+        padding: 6px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+    }
+
+    .buttons-section {
+        display: flex;
+        gap: 10px;
+    }
+
+    .btn {
+        padding: 6px 12px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+
+    /* Estilos para el menú desplegable de acciones */
+    .dropdown {
+        position: relative;
+        display: inline-block;
+    }
+
+    .dropdown-content {
+        display: none;
+        position: absolute;
+        background-color: white;
+        min-width: 160px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        z-index: 1000;
+        right: 0;
+        border-radius: 4px;
+        border: 1px solid #ddd;
+    }
+
+    .dropdown-content a {
+        padding: 12px 16px;
+        text-decoration: none;
+        display: block;
+        color: #333;
+    }
+
+    .dropdown-content.show {
+        display: block !important;
+    }
+
+    .estado-badge {
+        padding: 5px 15px;
+        border-radius: 4px;
+        font-size: 0.9em;
+        font-weight: 500;
+        display: inline-block;
+        text-align: center;
+        min-width: 80px;
+    }
+
+    .estado-activo {
+        background-color: #28a745;
+        color: white;
+    }
+
+    .estado-inactivo {
+        background-color: #dc3545;
+        color: white;
+    }
+
+    .imagen-producto {
+        width: 60px;
+        height: 60px;
+        border-radius: 8px;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+    }
+
+    .producto-thumbnail {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.3s ease;
+    }
+
+    /* Efecto hover para ver la imagen más grande */
+    .imagen-producto:hover .producto-thumbnail {
+        transform: scale(3.5);
+        position: relative;
+        z-index: 1000;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+
+    /* Asegurarse que la tabla tenga position relative para el hover */
+    .table {
+        position: relative;
+    }
+
+    /* Ajustar el ancho de la columna de imagen */
+    .table td:has(.imagen-producto) {
+        width: 80px;
+        padding: 10px;
+    }
+
+    .dropdown {
+        position: relative;
+        display: inline-block;
+    }
+
+    .btn-secondary {
+        background-color: #e9ecef;
+        border: 1px solid #ced4da;
+        color: #333;
+        padding: 6px 12px;
+        border-radius: 4px;
+    }
+
+    .dropdown-toggle::after {
+        display: inline-block;
+        margin-left: 8px;
+        vertical-align: middle;
+        content: "";
+        border-top: 4px solid;
+        border-right: 4px solid transparent;
+        border-bottom: 0;
+        border-left: 4px solid transparent;
+    }
+
+    .dropdown-content {
+        display: none;
+        position: absolute;
+        background-color: white;
+        min-width: 120px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        z-index: 1000;
+    }
+
+    .dropdown-content a {
+        text-decoration: none;
+        color: #333;
+    }
+
+    .dropdown-content a:hover {
+        background-color: #f8f9fa;
+    }
+
+    .show {
+        display: block !important;
+    }
+</style>
+
+<!-- Nueva barra de herramientas -->
+<div class="toolbar">
+    <div class="search-section">
+        <input type="text" id="searchInput" placeholder="Buscar por nombre" onkeyup="filterProducts()"/>
+        <select id="fabricanteSelect" onchange="filterProducts()">
+            <option value="">Selecciona fabricante</option>
+            {% for fabricante in fabricantes_unicos %}
+                <option value="{{ fabricante }}">{{ fabricante }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="buttons-section">
+        <a href="/productos/nuevo_producto/" class="btn">
+            <i class="fas fa-plus"></i> Nuevo
+        </a>
+        <button class="btn">
+            <i class="fas fa-cog"></i> Mostrar
+        </button>
+    </div>
+</div>
+
+<h2>Listado de Productos</h2>
+<table>
+    <thead>
+        <tr>
+            <th>Código</th>
+            <th>Imagen</th>
+            <th>Modelo</th>
+            <th>Producto</th>
+            <th>Fabricante</th>
+            <th>Estado</th>
+            <th>Stock</th>
+            <th>Precio</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for producto in productos %}
+        <tr>
+            <td>{{ producto.codigo }}</td>
+            <td>
+                <div class="imagen-producto">
+                    {% if producto.imagen %}
+                        <img src="{{ producto.imagen.url }}" alt="{{ producto.producto }}" class="producto-thumbnail">
+                    {% else %}
+                        <img src="{% static 'img/default-product.png' %}" alt="Sin imagen" class="producto-thumbnail">
+                    {% endif %}
+                </div>
+            </td>
+            <td>{{ producto.modelo }}</td>
+            <td>{{ producto.nombre }}</td>
+            <td>{{ producto.fabricante }}</td>
+            <td>
+                <span class="estado-badge {% if producto.estado.lower == 'activo' %}estado-activo{% else %}estado-inactivo{% endif %}">
+                    {{ producto.estado }}
+                </span>
+            </td>
+            <td>{{ producto.stock }}</td>
+            <td>{{ producto.precio }}</td>
+            <td>
+                <div class="dropdown">
+                    <button class="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        Acciones
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="/editar_producto/{{ producto.id }}/">
+                            <i class="fas fa-edit"></i> Editar
+                        </a></li>
+                        <li><button type="button" 
+                                    class="btn btn-danger" 
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#deleteModal{{ producto.id }}">
+                            <i class="fas fa-trash"></i> Borrar
+                        </button></li>
+                    </ul>
+                </div>
+            </td>
+        </tr>
+
+        <!-- Modal de confirmación para cada producto -->
+        <div class="modal fade" id="deleteModal{{ producto.id }}" tabindex="-1" aria-labelledby="deleteModalLabel{{ producto.id }}" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="deleteModalLabel{{ producto.id }}">Confirmar eliminación</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        ¿Está seguro que desea eliminar el producto "{{ producto.nombre }}"?
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <a href="/eliminar_producto/{{ producto.id }}/" class="btn btn-danger">Eliminar</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </tbody>
+</table>
+
+<!-- Agregar este script al final del archivo -->
+<script>
+    function toggleDropdown(id) {
+        // Prevenir el comportamiento por defecto
+        event.preventDefault();
+        
+        var dropdown = document.getElementById("dropdown-" + id);
+        var allDropdowns = document.getElementsByClassName("dropdown-content");
+        
+        // Cerrar todos los dropdowns primero
+        Array.from(allDropdowns).forEach(function(el) {
+            if(el.id !== "dropdown-" + id) {
+                el.classList.remove("show");
+            }
+        });
+        
+        // Toggle el dropdown actual
+        dropdown.classList.toggle("show");
+    }
+
+    // Cerrar dropdowns cuando se hace clic fuera
+    window.onclick = function(event) {
+        if (!event.target.matches('.dropdown-toggle')) {
+            var dropdowns = document.getElementsByClassName("dropdown-content");
+            Array.from(dropdowns).forEach(function(dropdown) {
+                if (dropdown.classList.contains('show')) {
+                    dropdown.classList.remove('show');
+                }
+            });
+        }
+    }
+
+    function filterProducts() {
+        const searchText = document.getElementById('searchInput').value.toLowerCase();
+        const fabricante = document.getElementById('fabricanteSelect').value.toLowerCase();
+        const rows = document.querySelectorAll('tbody tr');
+
+        rows.forEach(row => {
+            const producto = row.querySelector('td:nth-child(4)').textContent.toLowerCase(); // Columna de Producto
+            const fabricanteCol = row.querySelector('td:nth-child(5)').textContent.toLowerCase(); // Columna de Fabricante
+            
+            const matchesSearch = producto.includes(searchText);
+            const matchesFabricante = fabricante === '' || fabricanteCol === fabricante;
+
+            row.style.display = (matchesSearch && matchesFabricante) ? '' : 'none';
+        });
+    }
+</script>
+
+{% endblock %}

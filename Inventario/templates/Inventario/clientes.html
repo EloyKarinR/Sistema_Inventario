@@ -1,0 +1,647 @@
+{% extends 'Inventario/base.html' %}
+
+{% block content %}
+<style>
+    .active5 {
+        color: green !important; /* Cambia el color del texto a verde */
+        font-weight: bold;/* Opcional: hace que el texto sea más grueso */
+    }
+</style>
+<div class="container-fluid">
+    <div class="row mb-3">
+        <div class="col">
+            <div class="input-group">
+                <input type="text" class="form-control" placeholder="Buscar por nombre">
+                <button class="btn btn-outline-secondary" type="button">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+        </div>
+        <div class="col-auto">
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalNuevoCliente">
+                <i class="fas fa-plus"></i> Nuevo
+            </button>
+            <div class="btn-group">
+                <button type="button" class="btn btn-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                    Mostrar
+                </button>
+                <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="#">10</a></li>
+                    <li><a class="dropdown-item" href="#">25</a></li>
+                    <li><a class="dropdown-item" href="#">50</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <h4>Listado de Clientes</h4>
+
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th style="white-space: nowrap;"># de Impuesto</th>
+                    <th>Cliente</th>
+                    <th>Dirección</th>
+                    <th>Contacto</th>
+                    <th>Agregado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for cliente in clientes %}
+                <tr>
+                    <td>{{ cliente.id }}</td>
+                    <td>{{ cliente.numero_impuesto }}</td>
+                    <td>
+                        <strong>{{ cliente.nombre }}</strong>
+                        <div>
+                            <i class="fas fa-phone-alt text-secondary"></i> {{ cliente.telefono_empresa }}
+                        </div>
+                        {% if cliente.sitio_web %}
+                        <div>
+                            <i class="fas fa-globe text-secondary"></i>
+                            <a href="{{ cliente.sitio_web }}" target="_blank" class="text-primary text-decoration-none">
+                                {{ cliente.sitio_web|cut:"https://"|cut:"http://"|cut:"www." }}
+                            </a>
+                        </div>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {{ cliente.calle }},<br>
+                        {{ cliente.ciudad }}
+                    </td>
+                    <td>
+                        <div>
+                            <i class="fas fa-user text-secondary"></i> <strong>{{ cliente.nombres }} {{ cliente.apellidos }}</strong>
+                        </div>
+                        <div>
+                            <i class="fas fa-phone-alt text-secondary"></i> {{ cliente.telefono_contacto }}
+                        </div>
+                        <div>
+                            <i class="fas fa-envelope text-secondary"></i>
+                            <a href="mailto:{{ cliente.correo_electronico }}" class="text-primary text-decoration-none">
+                                {{ cliente.correo_electronico }}
+                            </a>
+                        </div>
+                    </td>
+                    <td>{{ cliente.fecha_registro|date:"d-m-Y" }}</td>
+                    <td>
+                        <div class="dropdown">
+                            <button class="btn btn-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                Acciones
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li>
+                                    <a class="dropdown-item" href="javascript:void(0);" onclick="editarCliente('{{ cliente.id }}')">
+                                        <i class="fas fa-edit"></i> Editar
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="javascript:void(0);" onclick="mostrarConfirmacionEliminar('{{ cliente.id }}', '{{ cliente.nombre }}')">
+                                        <i class="fas fa-trash"></i> Borrar
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal Nuevo Cliente -->
+<div class="modal fade" id="modalNuevoCliente" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Nuevo Cliente</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                {% csrf_token %}
+                <ul class="nav nav-tabs" id="clienteTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="empresa-tab" data-bs-toggle="tab" data-bs-target="#empresa" type="button" role="tab">
+                            Empresa
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="contacto-tab" data-bs-toggle="tab" data-bs-target="#contacto" type="button" role="tab">
+                            Contacto
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="direccion-tab" data-bs-toggle="tab" data-bs-target="#direccion" type="button" role="tab">
+                            Dirección
+                        </button>
+                    </li>
+                </ul>
+
+                <div class="tab-content mt-3" id="clienteTabsContent">
+                    <div class="tab-pane fade show active" id="empresa" role="tabpanel">
+                        <form id="formEmpresa">
+                            <div class="mb-3 row">
+                                <label class="col-sm-3 col-form-label text-end">Nombre</label>
+                                <div class="col-sm-9">
+                                    <input type="text" class="form-control" id="nombre" name="nombre" required>
+                                </div>
+                            </div>
+                            <div class="mb-3 row">
+                                <label class="col-sm-3 col-form-label text-end">Número de Impuesto</label>
+                                <div class="col-sm-9">
+                                    <input type="text" class="form-control" id="numero_impuesto" name="numero_impuesto">
+                                </div>
+                            </div>
+                            <div class="mb-3 row">
+                                <label class="col-sm-3 col-form-label text-end">Sitio Web</label>
+                                <div class="col-sm-9">
+                                    <input type="url" class="form-control" id="sitio_web" name="sitio_web">
+                                </div>
+                            </div>
+                            <div class="mb-3 row">
+                                <label class="col-sm-3 col-form-label text-end">Teléfono</label>
+                                <div class="col-sm-9">
+                                    <input type="tel" class="form-control" id="telefono_empresa" name="telefono_empresa" required>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="tab-pane fade" id="contacto" role="tabpanel">
+                        <form id="formContacto">
+                            <div class="mb-3 row">
+                                <label class="col-sm-3 col-form-label text-end">Nombres</label>
+                                <div class="col-sm-9">
+                                    <input type="text" class="form-control" id="nombres" name="nombres" required>
+                                </div>
+                            </div>
+                            <div class="mb-3 row">
+                                <label class="col-sm-3 col-form-label text-end">Apellidos</label>
+                                <div class="col-sm-9">
+                                    <input type="text" class="form-control" id="apellidos" name="apellidos" required>
+                                </div>
+                            </div>
+                            <div class="mb-3 row">
+                                <label class="col-sm-3 col-form-label text-end">Correo Electrónico</label>
+                                <div class="col-sm-9">
+                                    <input type="email" class="form-control" id="correo_electronico" name="correo_electronico" required>
+                                </div>
+                            </div>
+                            <div class="mb-3 row">
+                                <label class="col-sm-3 col-form-label text-end">Teléfono</label>
+                                <div class="col-sm-9">
+                                    <input type="tel" class="form-control" id="telefono_contacto" name="telefono_contacto" required>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="tab-pane fade" id="direccion" role="tabpanel">
+                        <form id="formDireccion">
+                            <div class="mb-3 row">
+                                <label class="col-sm-3 col-form-label text-end">Calle</label>
+                                <div class="col-sm-9">
+                                    <input type="text" class="form-control" id="calle" name="calle" required>
+                                </div>
+                            </div>
+                            <div class="mb-3 row">
+                                <label class="col-sm-3 col-form-label text-end">Ciudad</label>
+                                <div class="col-sm-9">
+                                    <input type="text" class="form-control" id="ciudad" name="ciudad" required>
+                                </div>
+                            </div>
+                            <div class="mb-3 row">
+                                <label class="col-sm-3 col-form-label text-end">Región/Provincia</label>
+                                <div class="col-sm-9">
+                                    <input type="text" class="form-control" id="region_provincia" name="region_provincia" required>
+                                </div>
+                            </div>
+                            <div class="mb-3 row">
+                                <label class="col-sm-3 col-form-label text-end">Código Postal</label>
+                                <div class="col-sm-9">
+                                    <input type="text" class="form-control" id="codigo_postal" name="codigo_postal" required>
+                                </div>
+                            </div>
+                            <div class="mb-3 row">
+                                <label class="col-sm-3 col-form-label text-end">País</label>
+                                <div class="col-sm-9">
+                                    <select class="form-select" id="pais" name="pais" required>
+                                        <option value="">Selecciona un país</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                <button type="button" class="btn btn-primary" onclick="guardarCliente()">Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Editar Cliente -->
+<div class="modal fade" id="modalEditarCliente" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Editar Cliente</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                {% csrf_token %}
+                <ul class="nav nav-tabs" id="editarClienteTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="editar-empresa-tab" data-bs-toggle="tab" data-bs-target="#editar-empresa" type="button" role="tab">
+                            Empresa
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="editar-contacto-tab" data-bs-toggle="tab" data-bs-target="#editar-contacto" type="button" role="tab">
+                            Contacto
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="editar-direccion-tab" data-bs-toggle="tab" data-bs-target="#editar-direccion" type="button" role="tab">
+                            Dirección
+                        </button>
+                    </li>
+                </ul>
+
+                <div class="tab-content mt-3" id="editarClienteTabsContent">
+                    <div class="tab-pane fade show active" id="editar-empresa" role="tabpanel">
+                        <form id="formEditarEmpresa">
+                            <input type="hidden" id="cliente_id_edit">
+                            <div class="mb-3 row">
+                                <label class="col-sm-3 col-form-label text-end">Nombre</label>
+                                <div class="col-sm-9">
+                                    <input type="text" class="form-control" id="nombre_edit" name="nombre" required>
+                                </div>
+                            </div>
+                            <div class="mb-3 row">
+                                <label class="col-sm-3 col-form-label text-end">Número de Impuesto</label>
+                                <div class="col-sm-9">
+                                    <input type="text" class="form-control" id="numero_impuesto_edit" name="numero_impuesto">
+                                </div>
+                            </div>
+                            <div class="mb-3 row">
+                                <label class="col-sm-3 col-form-label text-end">Sitio Web</label>
+                                <div class="col-sm-9">
+                                    <input type="url" class="form-control" id="sitio_web_edit" name="sitio_web">
+                                </div>
+                            </div>
+                            <div class="mb-3 row">
+                                <label class="col-sm-3 col-form-label text-end">Teléfono</label>
+                                <div class="col-sm-9">
+                                    <input type="tel" class="form-control" id="telefono_empresa_edit" name="telefono_empresa" required>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="tab-pane fade" id="editar-contacto" role="tabpanel">
+                        <form id="formEditarContacto">
+                            <div class="mb-3 row">
+                                <label class="col-sm-3 col-form-label text-end">Nombres</label>
+                                <div class="col-sm-9">
+                                    <input type="text" class="form-control" id="nombres_edit" name="nombres" required>
+                                </div>
+                            </div>
+                            <div class="mb-3 row">
+                                <label class="col-sm-3 col-form-label text-end">Apellidos</label>
+                                <div class="col-sm-9">
+                                    <input type="text" class="form-control" id="apellidos_edit" name="apellidos" required>
+                                </div>
+                            </div>
+                            <div class="mb-3 row">
+                                <label class="col-sm-3 col-form-label text-end">Correo Electrónico</label>
+                                <div class="col-sm-9">
+                                    <input type="email" class="form-control" id="correo_electronico_edit" name="correo_electronico" required>
+                                </div>
+                            </div>
+                            <div class="mb-3 row">
+                                <label class="col-sm-3 col-form-label text-end">Teléfono</label>
+                                <div class="col-sm-9">
+                                    <input type="tel" class="form-control" id="telefono_contacto_edit" name="telefono_contacto" required>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="tab-pane fade" id="editar-direccion" role="tabpanel">
+                        <form id="formEditarDireccion">
+                            <div class="mb-3 row">
+                                <label class="col-sm-3 col-form-label text-end">Calle</label>
+                                <div class="col-sm-9">
+                                    <input type="text" class="form-control" id="calle_edit" name="calle" required>
+                                </div>
+                            </div>
+                            <div class="mb-3 row">
+                                <label class="col-sm-3 col-form-label text-end">Ciudad</label>
+                                <div class="col-sm-9">
+                                    <input type="text" class="form-control" id="ciudad_edit" name="ciudad" required>
+                                </div>
+                            </div>
+                            <div class="mb-3 row">
+                                <label class="col-sm-3 col-form-label text-end">Región/Provincia</label>
+                                <div class="col-sm-9">
+                                    <input type="text" class="form-control" id="region_provincia_edit" name="region_provincia" required>
+                                </div>
+                            </div>
+                            <div class="mb-3 row">
+                                <label class="col-sm-3 col-form-label text-end">Código Postal</label>
+                                <div class="col-sm-9">
+                                    <input type="text" class="form-control" id="codigo_postal_edit" name="codigo_postal" required>
+                                </div>
+                            </div>
+                            <div class="mb-3 row">
+                                <label class="col-sm-3 col-form-label text-end">País</label>
+                                <div class="col-sm-9">
+                                    <select class="form-select" id="pais_edit" name="pais" required>
+                                        <option value="">Selecciona un país</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                <button type="button" class="btn btn-primary" onclick="actualizarCliente()">Guardar cambios</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+async function cargarPaises(selectId) {
+    try {
+        const response = await fetch('https://restcountries.com/v3.1/all');
+        const paises = await response.json();
+        
+        const select = document.getElementById(selectId);
+        select.innerHTML = '<option value="">Selecciona un país</option>';
+        
+        paises.sort((a, b) => a.name.common.localeCompare(b.name.common)).forEach(pais => {
+            const option = document.createElement('option');
+            option.value = pais.name.common;
+            option.textContent = pais.name.common;
+            select.appendChild(option);
+        });
+    } catch (error) {
+        console.error('Error al cargar países:', error);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    cargarPaises('pais');
+});
+
+async function guardarCliente() {
+    try {
+        const campos = {
+            nombre: document.getElementById('nombre').value.trim(),
+            numero_impuesto: document.getElementById('numero_impuesto').value.trim(),
+            sitio_web: document.getElementById('sitio_web').value.trim(),
+            telefono_empresa: document.getElementById('telefono_empresa').value.trim(),
+            nombres: document.getElementById('nombres').value.trim(),
+            apellidos: document.getElementById('apellidos').value.trim(),
+            correo_electronico: document.getElementById('correo_electronico').value.trim(),
+            telefono_contacto: document.getElementById('telefono_contacto').value.trim(),
+            calle: document.getElementById('calle').value.trim(),
+            ciudad: document.getElementById('ciudad').value.trim(),
+            region_provincia: document.getElementById('region_provincia').value.trim(),
+            codigo_postal: document.getElementById('codigo_postal').value.trim(),
+            pais: document.getElementById('pais').value.trim()
+        };
+
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+        const response = await fetch('/guardar_cliente/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify(campos)
+        });
+
+        const result = await response.json();
+        
+        if (result.status === 'success') {
+            bootstrap.Modal.getInstance(document.getElementById('modalNuevoCliente')).hide();
+            location.reload();
+        } else {
+            throw new Error(result.message || 'Error al guardar el cliente');
+        }
+        
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error al guardar el cliente: ' + error.message);
+    }
+}
+
+async function editarCliente(clienteId) {
+    try {
+        const response = await fetch(`/cliente_detalles/${clienteId}/`);
+        if (!response.ok) throw new Error('Error al cargar los datos del cliente');
+        
+        const data = await response.json();
+        if (data.status !== 'success') throw new Error(data.message);
+        
+        const cliente = data.cliente;
+        
+        document.getElementById('cliente_id_edit').value = clienteId;
+        document.getElementById('nombre_edit').value = cliente.nombre;
+        document.getElementById('numero_impuesto_edit').value = cliente.numero_impuesto || '';
+        document.getElementById('sitio_web_edit').value = cliente.sitio_web || '';
+        document.getElementById('telefono_empresa_edit').value = cliente.telefono_empresa;
+        document.getElementById('nombres_edit').value = cliente.nombres;
+        document.getElementById('apellidos_edit').value = cliente.apellidos;
+        document.getElementById('correo_electronico_edit').value = cliente.correo_electronico;
+        document.getElementById('telefono_contacto_edit').value = cliente.telefono_contacto;
+        document.getElementById('calle_edit').value = cliente.calle;
+        document.getElementById('ciudad_edit').value = cliente.ciudad;
+        document.getElementById('region_provincia_edit').value = cliente.region_provincia;
+        document.getElementById('codigo_postal_edit').value = cliente.codigo_postal;
+        
+        await cargarPaises('pais_edit');
+        document.getElementById('pais_edit').value = cliente.pais;
+        
+        const modal = new bootstrap.Modal(document.getElementById('modalEditarCliente'));
+        modal.show();
+        
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error al cargar los datos del cliente: ' + error.message);
+    }
+}
+
+async function actualizarCliente() {
+    try {
+        const clienteId = document.getElementById('cliente_id_edit').value;
+        const campos = {
+            nombre: document.getElementById('nombre_edit').value.trim(),
+            numero_impuesto: document.getElementById('numero_impuesto_edit').value.trim(),
+            sitio_web: document.getElementById('sitio_web_edit').value.trim(),
+            telefono_empresa: document.getElementById('telefono_empresa_edit').value.trim(),
+            nombres: document.getElementById('nombres_edit').value.trim(),
+            apellidos: document.getElementById('apellidos_edit').value.trim(),
+            correo_electronico: document.getElementById('correo_electronico_edit').value.trim(),
+            telefono_contacto: document.getElementById('telefono_contacto_edit').value.trim(),
+            calle: document.getElementById('calle_edit').value.trim(),
+            ciudad: document.getElementById('ciudad_edit').value.trim(),
+            region_provincia: document.getElementById('region_provincia_edit').value.trim(),
+            codigo_postal: document.getElementById('codigo_postal_edit').value.trim(),
+            pais: document.getElementById('pais_edit').value.trim()
+        };
+
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+        const response = await fetch(`/editar_cliente/${clienteId}/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify(campos)
+        });
+
+        const result = await response.json();
+        
+        if (result.status === 'success') {
+            bootstrap.Modal.getInstance(document.getElementById('modalEditarCliente')).hide();
+            location.reload();
+        } else {
+            throw new Error(result.message || 'Error al actualizar el cliente');
+        }
+        
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error al actualizar el cliente: ' + error.message);
+    }
+}
+
+function mostrarConfirmacionEliminar(clienteId, nombreCliente) {
+    if (confirm(`¿Estás seguro de que deseas eliminar al cliente ${nombreCliente}?`)) {
+        eliminarCliente(clienteId);
+    }
+}
+
+async function eliminarCliente(clienteId) {
+    try {
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        
+        const response = await fetch(`/eliminar_cliente/${clienteId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrfToken
+            }
+        });
+
+        const result = await response.json();
+        
+        if (result.status === 'success') {
+            location.reload();
+        } else {
+            throw new Error(result.message || 'Error al eliminar el cliente');
+        }
+        
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error al eliminar el cliente: ' + error.message);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Obtener referencias a todos los campos
+    const telefonoEmpresa = document.getElementById('telefono_empresa');
+    const telefonoContacto = document.getElementById('telefono_contacto');
+    const numeroImpuesto = document.getElementById('numero_impuesto');
+    const nombreCliente = document.getElementById('nombre');
+    const nombresContacto = document.getElementById('nombres');
+    const apellidosContacto = document.getElementById('apellidos');
+    
+    // Función para validar entrada de teléfono
+    function validarTelefono(e) {
+        let valor = this.value.replace(/[^\d+]/g, '');
+        if (valor.lastIndexOf('+') > 0) {
+            valor = valor.replace(/\+/g, '');
+        }
+        this.value = valor;
+    }
+
+    // Función para validar número de impuesto
+    function validarNumeroImpuesto(e) {
+        this.value = this.value.replace(/[^\d]/g, '');
+    }
+
+    // Función para validar nombres
+    function validarNombre(e) {
+        // Permitir letras, espacios, acentos, ñ, puntos, guiones y apóstrofes
+        this.value = this.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s.',-]/g, '');
+    }
+
+    // Aplicar validaciones a los campos
+    if (telefonoEmpresa) {
+        telefonoEmpresa.addEventListener('input', validarTelefono);
+    }
+    if (telefonoContacto) {
+        telefonoContacto.addEventListener('input', validarTelefono);
+    }
+    if (numeroImpuesto) {
+        numeroImpuesto.addEventListener('input', validarNumeroImpuesto);
+    }
+    if (nombreCliente) {
+        nombreCliente.addEventListener('input', validarNombre);
+    }
+    if (nombresContacto) {
+        nombresContacto.addEventListener('input', validarNombre);
+    }
+    if (apellidosContacto) {
+        apellidosContacto.addEventListener('input', validarNombre);
+    }
+
+    // Validación antes de enviar el formulario
+    const form = document.querySelector('form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const telefonoRegex = /^\+?[\d]{9,15}$/;
+            const impuestoRegex = /^\d+$/;
+            const nombreRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s.',-]+$/;
+            
+            if (!nombreRegex.test(nombreCliente.value)) {
+                e.preventDefault();
+                alert('El nombre solo debe contener letras y espacios');
+                return false;
+            }
+
+            if (!impuestoRegex.test(numeroImpuesto.value)) {
+                e.preventDefault();
+                alert('El número de impuesto debe contener solo números');
+                return false;
+            }
+            
+            if (!telefonoRegex.test(telefonoEmpresa.value)) {
+                e.preventDefault();
+                alert('El teléfono de empresa debe contener solo números y opcionalmente un + al inicio');
+                return false;
+            }
+            
+            if (!telefonoRegex.test(telefonoContacto.value)) {
+                e.preventDefault();
+                alert('El teléfono de contacto debe contener solo números y opcionalmente un + al inicio');
+                return false;
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

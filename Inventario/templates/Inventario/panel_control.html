@@ -1,0 +1,140 @@
+{% extends 'Inventario/base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block content %}
+<div class="flex-grow-1 p-2">
+    <h4 class="mb-3">Panel de Control <small class="text-muted">Versión 6.3</small></h4>
+    <div class="row"></div>
+    <div class="container-fluid p-2">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Reporte de ventas 2024</h5>
+                <button type="button" class="btn-close" aria-label="Close"></button>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <!-- Gráfico -->
+                    <div class="col-lg-8">
+                        <h6 class="text-center">Compras & Ventas 2024</h6>
+                        <canvas id="ventasChart" height="185"></canvas>
+                    </div>
+
+                    <!-- Tarjetas de Estadísticas -->
+                    <div class="col-lg-4">
+                        <div class="row g-2">
+                            <!-- Inventario Neto -->
+                            <div class="col-12">
+                                <div class="card bg-primary text-white">
+                                    <div class="card-body">
+                                        <h5 class="card-title">INVENTARIO NETO</h5>
+                                        <h3 class="card-text">$ {{ inventario_total|floatformat:2|intcomma }}</h3>
+                                        <p>Productos en stock: {{ productos_total }}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Ventas -->
+                            <div class="col-12">
+                                <div class="card bg-success text-white">
+                                    <div class="card-body">
+                                        <div class="d-flex align-items-center">
+                                            <i class="bi bi-cash-stack me-3"></i>
+                                            <div>
+                                                <h6>VENTAS 2024</h6>
+                                                <h4>${{ ventas_total|floatformat:2 }}</h4>
+                                                <small>Facturas emitidas: {{ facturas_emitidas }}</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Compras -->
+                            <div class="col-12">
+                                <div class="card bg-warning text-white">
+                                    <div class="card-body">
+                                        <div class="d-flex align-items-center">
+                                            <i class="bi bi-cart me-3"></i>
+                                            <div>
+                                                <h6>COMPRAS 2024</h6>
+                                                <h4>${{ compras_total|floatformat:2 }}</h4>
+                                                <small>Compras realizadas: {{ compras_realizadas }}</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Clientes -->
+                            <div class="col-12">
+                                <div class="card bg-info text-white">
+                                    <div class="card-body">
+                                        <div class="d-flex align-items-center">
+                                            <i class="bi bi-people-fill me-3"></i>
+                                            <div>
+                                                <h6>CLIENTES</h6>
+                                                <h4>{{ total_clientes }}</h4>
+                                                <small>Clientes nuevos: {{ nuevos_clientes }}</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div> <!-- Fin de row g-2 -->
+                    </div> <!-- Fin de col-lg-4 -->
+                </div> <!-- Fin de row -->
+            </div> <!-- Fin de card-body -->
+        </div> <!-- Fin de card -->
+    </div> <!-- Fin de container-fluid -->
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const ctx = document.getElementById('ventasChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'],
+            datasets: [{
+                label: 'Ventas',
+                data: [320000, 580000, 180000, 70000, 55000, 290000, 45000, 35000, 40000, 90000, 25000, 20000],
+                backgroundColor: '#198754',
+                order: 1
+            }, {
+                label: 'Compras',
+                data: [0, 0, 180000, 70000, 0, 120000, 0, 0, 60000, 0, 0, 0],
+                backgroundColor: '#e9ecef',
+                order: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        drawBorder: false
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    }
+                }
+            },
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Compras & Ventas 2024',
+                    padding: {
+                        bottom: 30
+                    }
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}
+

@@ -1,0 +1,259 @@
+{% extends 'Inventario/base.html' %}
+
+{% block content %}
+<style>
+    .active8 {
+        color: green !important; /* Cambia el color del texto a verde */
+        font-weight: bold;/* Opcional: hace que el texto sea más grueso */
+    }
+
+
+    .btn-group {
+        margin: 10px 0;
+    }
+    
+    .btn-default {
+        background-color: #fff;
+        border: 1px solid #ddd;
+        color: #333;
+    }
+    
+    .btn-default:hover {
+        background-color: #f5f5f5;
+    }
+    
+    .caret {
+        display: inline-block;
+        width: 0;
+        height: 0;
+        margin-left: 2px;
+        vertical-align: middle;
+        border-top: 4px dashed;
+        border-right: 4px solid transparent;
+        border-left: 4px solid transparent;
+    }
+    
+    .btn-primary {
+        background-color: #0d6efd;
+        border-color: #0d6efd;
+        color: white;
+    }
+    
+    .btn-primary:hover {
+        background-color: #0b5ed7;
+        border-color: #0a58ca;
+    }
+    
+    .btn-secondary {
+        background-color: #6c757d;
+        border-color: #6c757d;
+        color: white;
+    }
+    
+    .btn-secondary:hover {
+        background-color: #5c636a;
+        border-color: #565e64;
+    }
+    
+    .btn {
+        padding: 6px 12px;
+        font-size: 14px;
+        font-weight: 400;
+        line-height: 1.5;
+        border-radius: 4px;
+    }
+    
+    .dropdown-toggle::after {
+        display: inline-block;
+        margin-left: 0.255em;
+        vertical-align: 0.255em;
+        content: "";
+        border-top: 0.3em solid;
+        border-right: 0.3em solid transparent;
+        border-bottom: 0;
+        border-left: 0.3em solid transparent;
+    }
+    
+    .btn-group {
+        display: inline-flex;
+    }
+    
+    .dropdown-item {
+        display: flex;
+        align-items: center;
+        padding: 0.5rem 1rem;
+    }
+    
+    .dropdown-item i {
+        width: 16px;
+        text-align: center;
+        margin-right: 8px;
+    }
+    
+    .btn-secondary {
+        background-color: #e9ecef;
+        border-color: #ddd;
+        color: #333;
+    }
+    
+    .btn-secondary:hover {
+        background-color: #ddd;
+        border-color: #ccc;
+        color: #333;
+    }
+    
+    .dropdown-item.text-danger:hover {
+        background-color: #fff5f5;
+    }
+</style>
+    
+<!-- Filtros superiores -->
+<div class="row mb-3">
+    <div class="col-md-3">
+        <div class="input-group">
+            <span class="input-group-text">
+                <i class="fas fa-calendar"></i>
+            </span>
+            <input type="text" class="form-control" value="01/11/2024 - 29/11/2024">
+        </div>
+    </div>
+    <div class="col-md-4">
+        <select class="form-select">
+            <option value="">Selecciona el cliente</option>
+            {% for cliente in clientes %}
+                <option value="{{ cliente.id }}">{{ cliente.nombre }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-3">
+        <div class="input-group">
+            <input type="text" class="form-control" placeholder="Buscar por núm">
+            <button class="btn btn-outline-secondary" type="button">
+                <i class="fas fa-search"></i>
+            </button>
+        </div>
+    </div>
+    <div class="col-md-2 text-end">
+        <div class="btn-group mb-3">
+            <a href='/nueva_venta' class="btn btn-primary">
+                <i class="fas fa-plus"></i> Nuevo
+            </a>
+            <button type="button" class="btn btn-secondary dropdown-toggle" data-toggle="dropdown">
+                Mostrar <span class="caret"></span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Título -->
+<h4>Listado de Ventas</h4>
+
+<!-- Tabla de facturas -->
+<div class="table-responsive">
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Factura N°</th>
+                <th>Cliente</th>
+                <th>Fecha</th>
+                <th>Vendedor</th>
+                <th class="text-end">Neto</th>
+                <th class="text-end">IVA</th>
+                <th class="text-end">Total</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% if ventas %}
+                {% for venta in ventas %}
+                <tr>
+                    <td>{{ venta.numero_factura }}</td>
+                    <td>{{ venta.cliente.nombre }}</td>
+                    <td>{{ venta.fecha|date:"d-m-Y" }}</td>
+                    <td>{{ venta.vendedor.username }}</td>
+                    <td class="text-end">{{ venta.neto|floatformat:2 }}</td>
+                    <td class="text-end">{{ venta.iva|floatformat:2 }}</td>
+                    <td class="text-end">{{ venta.total|floatformat:2 }}</td>
+                    <td>
+                        <div class="dropdown">
+                            <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
+                                Acciones
+                            </button>
+                            <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                                <li>
+                                    <a class="dropdown-item" href="/admin_facturas/editar_venta/{{ venta.id }}/">
+                                        <i class="fas fa-edit me-2"></i> Editar
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="/ver_pdf/{{ venta.id }}/" target="_blank">
+                                        <i class="far fa-file-pdf me-2"></i> Ver PDF
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item text-danger" href="#" onclick="confirmarBorrado({{ venta.id }}); return false;">
+                                        <i class="fas fa-trash-alt me-2"></i> Borrar
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            {% else %}
+                <tr>
+                    <td colspan="8" class="text-center">No hay ventas registradas</td>
+                </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Agrega este script al final del archivo -->
+<script>
+function confirmarBorrado(ventaId) {
+    if (confirm('¿Está seguro que desea eliminar esta venta?')) {
+        fetch(`/borrar_venta/${ventaId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Error en la respuesta del servidor');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                window.location.reload();
+            } else {
+                console.error('Error del servidor:', data);
+                alert('Error al eliminar la venta: ' + (data.error || 'Error desconocido'));
+            }
+        })
+        .catch(error => {
+            console.error('Error completo:', error);
+            alert('Error al eliminar la venta');
+        });
+    }
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+{% endblock %}
+
