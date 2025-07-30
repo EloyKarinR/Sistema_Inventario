@@ -1,0 +1,32 @@
+{% extends 'Inventario/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-5" style="max-width: 500px;">
+    <div class="card shadow-sm">
+        <div class="card-header bg-success text-white">
+            <h5 class="mb-0">Editar Perfil</h5>
+        </div>
+        <div class="card-body">
+            <div class="text-center mb-4">
+                {% if profile.image and profile.image.url %}
+                    <img src="{{ profile.image.url }}" class="rounded-circle" width="120" height="120" style="object-fit:cover; border: 3px solid #198754;">
+                {% else %}
+                    <img src="{% static 'img/default-avatar.png' %}" class="rounded-circle" width="120" height="120" style="object-fit:cover; border: 3px solid #198754;">
+                {% endif %}
+            </div>
+            <form method="POST" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="mb-3">
+                    {{ form.image.label_tag }}
+                    {{ form.image }}
+                    {% if form.image.errors %}
+                        <div class="text-danger small">{{ form.image.errors }}</div>
+                    {% endif %}
+                </div>
+                <button type="submit" class="btn btn-success w-100">Guardar Cambios</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %} 

@@ -5,11 +5,11 @@ from Inventario import views
 app_name = 'Inventario'
 
 urlpatterns = [
-    path('', views.panel_control, name='panel_control'),
+    path('', views.index, name='index'),
     path('panel_control/', views.panel_control, name='panel_control'),
     path('nueva_compra/', views.nueva_compra, name='nueva_compra'),
     path('historial_compras/', views.historial_compras, name='historial_compras'),
-    path('productos/', views.productos, name='productos'),
+    path('productos/', views.productos_view, name='productos'),
     path('productos/nuevo_producto/', views.nuevo_producto, name='nuevo_producto'),
     path('editar_producto/<int:producto_id>/', views.editar_producto, name='editar_producto'),
     path('eliminar_producto/<int:producto_id>/', views.eliminar_producto, name='eliminar_producto'),
@@ -41,7 +41,7 @@ urlpatterns = [
     path('obtener_cliente/<int:cliente_id>/', views.obtener_cliente, name='obtener_cliente'),
     path('buscar_productos_venta/', views.buscar_productos_venta, name='buscar_productos_venta'),
     path('guardar_venta/', views.guardar_venta, name='guardar_venta'),
-    path('lista_productos/', views.lista_productos, name='lista_productos'),
+    #path('lista_productos/', views.lista_productos, name='lista_productos'),
 
     path('admin_facturas/', views.admin_facturas, name='admin_facturas'),
     path('borrar_venta/<int:venta_id>/', views.borrar_venta, name='borrar_venta'),
@@ -55,5 +55,6 @@ urlpatterns = [
     path('generar-pdf-inventario/', views.generar_pdf_inventario, name='generar_pdf_inventario'),
     path('login/', views.login_view, name='login'),
     path('logout/', views.logout_view, name='logout'),
+    path('editar_perfil/', views.editar_perfil, name='editar_perfil'),
 ]
 

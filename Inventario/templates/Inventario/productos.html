@@ -189,18 +189,63 @@
     .show {
         display: block !important;
     }
+
+    /* Estilos para la paginación */
+    .pagination {
+        display: flex;
+        justify-content: center;
+        margin-top: 20px;
+        gap: 5px;
+    }
+
+    .pagination .page-item {
+        list-style: none;
+    }
+
+    .pagination .page-link {
+        padding: 8px 16px;
+        border: 1px solid #ddd;
+        background-color: white;
+        color: #333;
+        text-decoration: none;
+        border-radius: 4px;
+        transition: all 0.3s ease;
+    }
+
+    .pagination .page-link:hover {
+        background-color: #e9ecef;
+        border-color: #dee2e6;
+    }
+
+    .pagination .active .page-link {
+        background-color: #28a745;
+        color: white;
+        border-color: #28a745;
+    }
+
+    .pagination .disabled .page-link {
+        color: #6c757d;
+        pointer-events: none;
+        background-color: #fff;
+        border-color: #dee2e6;
+    }
 </style>
 
 <!-- Nueva barra de herramientas -->
 <div class="toolbar">
     <div class="search-section">
-        <input type="text" id="searchInput" placeholder="Buscar por nombre" onkeyup="filterProducts()"/>
-        <select id="fabricanteSelect" onchange="filterProducts()">
-            <option value="">Selecciona fabricante</option>
-            {% for fabricante in fabricantes_unicos %}
-                <option value="{{ fabricante }}">{{ fabricante }}</option>
-            {% endfor %}
-        </select>
+        <form id="searchForm" method="get" action="">
+            <input type="text" name="searchInput" id="searchInput" placeholder="Buscar por nombre" value="{{ search_query }}"/>
+            <select name="fabricanteSelect" id="fabricanteSelect">
+                <option value="">Selecciona fabricante</option>
+                {% for fabricante in fabricantes_unicos %}
+                    <option value="{{ fabricante }}" {% if fabricante == fabricante_query %}selected{% endif %}>{{ fabricante }}</option>
+                {% endfor %}
+            </select>
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-search"></i> Buscar
+            </button>
+        </form>
     </div>
     <div class="buttons-section">
         <a href="/productos/nuevo_producto/" class="btn">
@@ -291,6 +336,63 @@
     </tbody>
 </table>
 
+<!-- Paginación -->
+<nav aria-label="Navegación de productos">
+    <ul class="pagination">
+        {% if productos.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page=1{% if request.GET.searchInput %}&searchInput={{ request.GET.searchInput }}{% endif %}{% if request.GET.fabricanteSelect %}&fabricanteSelect={{ request.GET.fabricanteSelect }}{% endif %}" aria-label="Primera">
+                    <span aria-hidden="true">&laquo;&laquo;</span>
+                </a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ productos.previous_page_number }}{% if request.GET.searchInput %}&searchInput={{ request.GET.searchInput }}{% endif %}{% if request.GET.fabricanteSelect %}&fabricanteSelect={{ request.GET.fabricanteSelect }}{% endif %}" aria-label="Anterior">
+                    <span aria-hidden="true">&laquo;</span>
+                </a>
+            </li>
+        {% else %}
+            <li class="page-item disabled">
+                <span class="page-link">&laquo;&laquo;</span>
+            </li>
+            <li class="page-item disabled">
+                <span class="page-link">&laquo;</span>
+            </li>
+        {% endif %}
+
+        {% for num in productos.paginator.page_range %}
+            {% if productos.number == num %}
+                <li class="page-item active">
+                    <span class="page-link">{{ num }}</span>
+                </li>
+            {% elif num > productos.number|add:'-3' and num < productos.number|add:'3' %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ num }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.fabricante %}&fabricante={{ request.GET.fabricante }}{% endif %}">{{ num }}</a>
+                </li>
+            {% endif %}
+        {% endfor %}
+
+        {% if productos.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ productos.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.fabricante %}&fabricante={{ request.GET.fabricante }}{% endif %}" aria-label="Siguiente">
+                    <span aria-hidden="true">&raquo;</span>
+                </a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ productos.paginator.num_pages }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.fabricante %}&fabricante={{ request.GET.fabricante }}{% endif %}" aria-label="Última">
+                    <span aria-hidden="true">&raquo;&raquo;</span>
+                </a>
+            </li>
+        {% else %}
+            <li class="page-item disabled">
+                <span class="page-link">&raquo;</span>
+            </li>
+            <li class="page-item disabled">
+                <span class="page-link">&raquo;&raquo;</span>
+            </li>
+        {% endif %}
+    </ul>
+</nav>
+
 <!-- Agregar este script al final del archivo -->
 <script>
     function toggleDropdown(id) {
@@ -323,21 +425,15 @@
         }
     }
 
-    function filterProducts() {
-        const searchText = document.getElementById('searchInput').value.toLowerCase();
-        const fabricante = document.getElementById('fabricanteSelect').value.toLowerCase();
-        const rows = document.querySelectorAll('tbody tr');
+    document.getElementById('searchInput').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            document.getElementById('searchForm').submit();
+        }
+    });
 
-        rows.forEach(row => {
-            const producto = row.querySelector('td:nth-child(4)').textContent.toLowerCase(); // Columna de Producto
-            const fabricanteCol = row.querySelector('td:nth-child(5)').textContent.toLowerCase(); // Columna de Fabricante
-            
-            const matchesSearch = producto.includes(searchText);
-            const matchesFabricante = fabricante === '' || fabricanteCol === fabricante;
-
-            row.style.display = (matchesSearch && matchesFabricante) ? '' : 'none';
-        });
-    }
+    document.getElementById('fabricanteSelect').addEventListener('change', function() {
+        document.getElementById('searchForm').submit();
+    });
 </script>
 
 {% endblock %}

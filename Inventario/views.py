@@ -5,7 +5,7 @@ from Inventario.models import Producto  # Asegúrate de importar tu modelo de Pr
 from django.contrib import messages
 from .forms import ProductoForm 
 from decimal import Decimal
-from .models import Fabricante
+from .models import Fabricante, Venta, Cliente
 from .forms import FabricanteForm
 from .models import Proveedor
 from django.http import JsonResponse
@@ -46,12 +46,19 @@ import io
 from django.core.exceptions import ValidationError
 from django.contrib.auth import authenticate, login, logout
 from django.db import transaction  # Agregar al inicio del archivo
+from .forms import ProfileForm
+from .models import Profile
 
 
 
 
 
 
+
+def index(request):
+    if not request.user.is_authenticated:
+        return redirect('Inventario:login')
+    return redirect('Inventario:panel_control')
 
 @login_required
 def panel_control(request):
@@ -95,17 +102,42 @@ def historial_compras(request):
     return render(request, 'Inventario/historial_compras.html', context)
 
 @login_required
-def productos(request):
-    productos = Producto.objects.all()
-    context = {
-        'productos': productos
-    }
-    return render(request, 'Inventario/productos.html', context)
-
-@login_required
 def productos_view(request):
-    productos = Producto.objects.all()  # Asegúrate de que 'Producto' sea tu modelo
-    return render(request, 'Inventario/productos.html', {'productos': productos})
+    # Iniciar el queryset con todos los productos
+    productos_list = Producto.objects.all().order_by('codigo')
+    
+    # Aplicar filtros si existen
+    search_query = request.GET.get('searchInput', '')
+    fabricante_query = request.GET.get('fabricanteSelect', '')
+    
+    if search_query:
+        productos_list = productos_list.filter(nombre__icontains=search_query)
+    
+    if fabricante_query:
+        productos_list = productos_list.filter(fabricante__iexact=fabricante_query)
+    
+    # Configurar la paginación
+    paginator = Paginator(productos_list, 5)  # Mostrar 5 productos por página
+    page = request.GET.get('page', 1)
+    
+    try:
+        productos = paginator.page(page)
+    except PageNotAnInteger:
+        productos = paginator.page(1)
+    except EmptyPage:
+        productos = paginator.page(paginator.num_pages)
+    
+    # Obtener fabricantes únicos para el filtro
+    fabricantes_unicos = Producto.objects.values_list('fabricante', flat=True).distinct()
+    
+    context = {
+        'productos': productos,
+        'fabricantes_unicos': fabricantes_unicos,
+        'search_query': search_query,
+        'fabricante_query': fabricante_query,
+    }
+    
+    return render(request, 'Inventario/productos.html', context)
 
 def nuevo_producto(request):
     if request.method == 'POST':
@@ -117,16 +149,24 @@ def nuevo_producto(request):
             if not fabricante_nombre:
                 raise ValueError("Debe seleccionar un fabricante")
 
+            # Convertir valores numéricos
+            try:
+                costo = float(request.POST['costo'])
+                precio = float(request.POST['precio'])
+                stock = int(request.POST['stock'])
+            except ValueError as ve:
+                raise ValueError("Por favor, ingrese valores numéricos válidos para costo, precio y stock")
+
             nuevo_producto = Producto(
                 codigo=request.POST['codigo'],
                 modelo=request.POST['modelo'],
                 nombre=request.POST['nombre'],
                 descripcion=request.POST['descripcion'],
-                fabricante=fabricante_nombre,  # Asignamos el nombre del fabricante
+                fabricante=fabricante_nombre,
                 estado=request.POST['estado'],
-                costo=request.POST['costo'],
-                precio=request.POST['precio'],
-                stock=request.POST['stock']
+                costo=costo,
+                precio=precio,
+                stock=stock
             )
             
             if 'imagen' in request.FILES:
@@ -135,10 +175,22 @@ def nuevo_producto(request):
             nuevo_producto.save()
             print(f"Producto guardado con fabricante: {nuevo_producto.fabricante}")  # Debug
             messages.success(request, 'Producto guardado exitosamente')
-            return redirect('productos_view')
+            return redirect('Inventario:productos')
         except Exception as e:
             print(f"Error detallado: {str(e)}")
             messages.error(request, f'Error al guardar el producto: {str(e)}')
+            
+            # Imprimir todos los datos del POST para debugging
+            print("Datos del POST:")
+            for key, value in request.POST.items():
+                print(f"{key}: {value}")
+            
+            # Obtener fabricantes para el formulario en caso de error
+            fabricantes = Fabricante.objects.all()
+            return render(request, 'Inventario/nuevo_producto.html', {
+                'fabricantes': fabricantes,
+                'form_data': request.POST  # Devolvemos los datos del formulario para mantenerlos
+            })
 
     # Obtener fabricantes para el formulario
     fabricantes = Fabricante.objects.all()
@@ -679,11 +731,114 @@ def eliminar_proveedor(request, proveedor_id):
 
 def nueva_venta(request):
     productos = Producto.objects.all()
-    clientes = Cliente.objects.all()  # Obtener todos los clientes
+    clientes = Cliente.objects.all()
+
+    # Obtener el último número de factura y generar el siguiente
+    ultima_venta = Venta.objects.order_by('-numero_factura').first()
+    siguiente_numero = '1'
+    if ultima_venta:
+        try:
+            ultimo_numero = int(ultima_venta.numero_factura)
+            siguiente_numero = str(ultimo_numero + 1)
+        except ValueError:
+            # Si el último número no es numérico, empezar desde 1
+            siguiente_numero = '1'
+
+    # Obtener la fecha actual
+    fecha_actual = timezone.now()
+
     return render(request, 'Inventario/nueva_venta.html', {
         'productos': productos,
         'clientes': clientes,
+        'siguiente_numero_factura': siguiente_numero,
+        'fecha_actual': fecha_actual,
+        'active_page': 'nueva_venta'
     })
+
+@login_required
+@require_POST
+@transaction.atomic
+def guardar_venta(request):
+    try:
+        data = json.loads(request.body)
+        
+        # Validar que el número de factura no exista
+        if Venta.objects.filter(numero_factura=data['numero_factura']).exists():
+            return JsonResponse({
+                'status': 'error',
+                'message': 'El número de factura ya existe'
+            })
+            
+        # Manejar el caso de persona natural
+        cliente_id = data['cliente']
+        if cliente_id == 'persona_natural':
+            # Crear un cliente temporal para persona natural
+            cliente = Cliente.objects.create(
+                nombre="Cliente Final",
+                numero_impuesto="00000000",
+                telefono_empresa="000000000",
+                nombres="Cliente",
+                apellidos="Final",
+                correo_electronico="cliente@final.com",
+                telefono_contacto="000000000",
+                calle="Sin dirección",
+                ciudad="Sin ciudad",
+                region_provincia="Sin región",
+                codigo_postal="00000",
+                pais="Sin país"
+            )
+            cliente_id = cliente.id
+        
+        # Crear la venta
+        venta = Venta.objects.create(
+            numero_factura=data['numero_factura'],
+            cliente_id=cliente_id,
+            vendedor=request.user,
+            neto=Decimal(str(data['neto'])),
+            iva=Decimal(str(data['iva'])),
+            total=Decimal(str(data['total']))
+        )
+
+        # Procesar los detalles
+        for detalle in data['detalles']:
+            producto = Producto.objects.get(codigo=detalle['codigo'])
+            cantidad = int(detalle['cantidad'])
+
+            # Validar stock
+            if producto.stock < cantidad:
+                # Si hay error de stock, eliminar la venta y retornar error
+                venta.delete()
+                return JsonResponse({
+                    'status': 'error',
+                    'message': f'Stock insuficiente para el producto {producto.nombre}. Stock actual: {producto.stock}'
+                })
+
+            # Crear el detalle
+            DetalleVenta.objects.create(
+                venta=venta,
+                producto=producto,
+                cantidad=cantidad,
+                precio_unitario=Decimal(str(detalle['precio_unitario'])),
+                precio_total=Decimal(str(detalle['precio_total']))
+            )
+
+            # Actualizar el stock
+            producto.stock -= cantidad
+            producto.save()
+
+        return JsonResponse({
+            'status': 'success',
+            'message': 'Venta guardada exitosamente',
+            'id': venta.id
+        })
+
+    except Exception as e:
+        print(f"Error al guardar venta: {str(e)}")
+        print(traceback.format_exc())
+        return JsonResponse({
+            'status': 'error',
+            'message': str(e)
+        })
 
 def obtener_cliente(request, cliente_id):
     try:
@@ -896,547 +1051,25 @@ def perfil_empresa(request):
         except Exception as e:
             messages.error(request, f'Error al guardar: {str(e)}')
     
-    return render(request, 'Inventario/perfil_empresa.html', {'empresa': empresa})
-
-def ver_pdf(request, venta_id):
-    # Obtener los datos
-    venta = Venta.objects.get(id=venta_id)
-    empresa = PerfilEmpresa.objects.first()
-    detalles = DetalleVenta.objects.filter(venta=venta)  # Obtener detalles así
-    
-    # Crear el response
-    response = HttpResponse(content_type='application/pdf')
-    response['Content-Disposition'] = f'filename=factura_{venta.numero_factura}.pdf'
-    
-    # Crear el PDF
-    p = canvas.Canvas(response, pagesize=letter)
-    width, height = letter
-    
-    # Dibujar el encabezado rojo
-    p.setFillColor(colors.red)
-    p.rect(0, height-60, width, 60, fill=1)
-    
-    # Logo de la empresa
-    if empresa.logo:
-        logo_path = os.path.join(settings.MEDIA_ROOT, str(empresa.logo))
-        p.drawImage(logo_path, 50, height-50, width=100, height=40, preserveAspectRatio=True)
-    
-    # Información de contacto de la empresa
-    p.setFillColor(colors.black)
-    p.setFont("Helvetica", 10)
-    p.drawString(50, height-80, f"Tel: {empresa.telefono}")
-    p.drawString(width/2-50, height-80, f"Email: {empresa.correo_electronico}")
-    p.drawString(width-200, height-80, f"Dir: {empresa.calle}, {empresa.ciudad}")
-    
-    # Título FACTURA
-    p.setFont("Helvetica-Bold", 24)
-    p.setFillColor(colors.white)
-    p.drawString(width-200, height-40, "FACTURA")
-    
-    # Información de facturación
-    p.setFillColor(colors.black)
-    p.setFont("Helvetica-Bold", 12)
-    p.drawString(50, height-150, "FACTURAR A")
-    
-    # Detalles del cliente (solo nombre)
-    p.setFont("Helvetica", 10)
-    p.drawString(50, height-170, f"Cliente: {venta.cliente.nombre}")
-    
-    # Número de factura y fecha
-    p.drawString(width-200, height-150, f"Factura N°: {venta.numero_factura}")
-    p.drawString(width-200, height-165, f"Fecha: {venta.fecha.strftime('%d/%m/%Y')}")
-    
-    # Tabla de productos
-    y = height-250
-    # Encabezados
-    p.setFillColor(colors.red)
-    p.rect(50, y, width-100, 20, fill=1)
-    p.setFillColor(colors.white)
-    p.drawString(60, y+5, "CANT.")
-    p.drawString(120, y+5, "DESCRIPCIÓN")
-    p.drawString(width-200, y+5, "PRECIO UNIT.")
-    p.drawString(width-100, y+5, "PRECIO TOTAL")
-    
-    # Productos
-    y -= 30
-    p.setFillColor(colors.black)
-    for detalle in detalles:  # Usar la variable detalles en lugar de venta.detalleventa_set
-        p.drawString(60, y, str(detalle.cantidad))
-        p.drawString(120, y, detalle.producto.nombre)
-        p.drawString(width-200, y, f"${detalle.precio_unitario}")
-        p.drawString(width-100, y, f"${detalle.precio_total}")
-        y -= 20
-    
-    # Totales
-    y = 150
-    p.drawString(width-200, y, f"SUBTOTAL $ {venta.neto}")
-    p.drawString(width-200, y-20, f"IVA $ {venta.iva}")
-    p.setFont("Helvetica-Bold", 12)
-    p.drawString(width-200, y-40, f"TOTAL $ {venta.total}")
-    
-    # Mensaje final
-    p.setFont("Helvetica", 10)
-    p.drawString(width/2-50, 50, "¡Gracias por su compra!")
-    
-    p.showPage()
-    p.save()
-    
-    return response
-
-def reporte_inventario(request):
-    productos = Producto.objects.all()
-    fabricantes = Producto.objects.values_list('fabricante', flat=True).distinct()
-    
-    # Obtener parámetros de búsqueda
-    buscar_codigo = request.GET.get('codigo', '')
-    buscar_nombre = request.GET.get('nombre', '')
-    fabricante_seleccionado = request.GET.get('fabricante')
-
-    # Aplicar filtros
-    if buscar_codigo:
-        productos = productos.filter(codigo__icontains=buscar_codigo)
-    if buscar_nombre:
-        productos = productos.filter(nombre__icontains=buscar_nombre)
-    if fabricante_seleccionado:
-        productos = productos.filter(fabricante=fabricante_seleccionado)
-    
-    # Calcular totales
-    total_productos = productos.count()
-    total_items = productos.aggregate(total=Sum('stock'))['total'] or 0
-    total_inventario = sum(producto.stock * producto.costo for producto in productos)
-    
     context = {
-        'productos': productos,
-        'fabricantes': fabricantes,
-        'fabricante_seleccionado': fabricante_seleccionado,
-        'buscar_codigo': buscar_codigo,
-        'buscar_nombre': buscar_nombre,
-        'total_productos': total_productos,
-        'total_items': total_items,
-        'total_inventario': total_inventario,
-        'active_page': 'reporte_inventario'
+        'empresa': empresa,
+        'active_page': 'perfil_empresa'
     }
-    return render(request, 'Inventario/reporte_inventario.html', context)
+    return render(request, 'Inventario/perfil_empresa.html', context)
 
-def productos_stock_bajo(request):
-    # Obtener productos con stock <= 10, ordenados por stock ascendente
-    productos_criticos = Producto.objects.filter(stock__lte=10).order_by('stock')
-    
-    # Categorizar productos por nivel de urgencia
-    muy_criticos = productos_criticos.filter(stock__lte=3)
-    criticos = productos_criticos.filter(stock__gt=3, stock__lte=7)
-    precaucion = productos_criticos.filter(stock__gt=7, stock__lte=10)
-    
-    context = {
-        'muy_criticos': muy_criticos,
-        'criticos': criticos,
-        'precaucion': precaucion,
-        'total_criticos': productos_criticos.count(),
-        'active_page': 'stock_bajo'
-    }
-    return render(request, 'Inventario/productos_stock_bajo.html', context)
-
-def generar_pdf_inventario(request):
-    buffer = io.BytesIO()
-    doc = SimpleDocTemplate(
-        buffer,
-        pagesize=letter,
-        rightMargin=72,
-        leftMargin=72,
-        topMargin=72,
-        bottomMargin=72
-    )
-    
-    elements = []
-    
-    # Estilos
-    styles = getSampleStyleSheet()
-    
-    # Logo - Actualizado con la ruta correcta
-    logo_path = os.path.join(settings.MEDIA_ROOT, 'empresa', 'mitroservice.jpg')
-    logo = Image(logo_path, 2*inch, 1*inch)
-    elements.append(logo)
-    
-    # Título
-    title = Paragraph("Reporte de Inventario", styles['Title'])
-    elements.append(title)
-    elements.append(Spacer(1, 12))
-    
-    productos = Producto.objects.all().order_by('codigo')
-    
-    data = [['Código', 'Producto', 'Fabricante', 'Existencias', 'Costo', 'Total']]
-    total_general = 0
-    
-    for producto in productos:
-        total = producto.stock * producto.costo
-        total_general += total
-        data.append([
-            producto.codigo,
-            producto.nombre,
-            producto.fabricante,
-            str(producto.stock),
-            f"{producto.costo:.2f}",
-            f"{total:.2f}"
-        ])
-    
-    data.append(['', '', '', '', 'Total', f"{total_general:.2f}"])
-    
-    table = Table(data, colWidths=[1*inch, 2*inch, 1*inch, 1*inch, 1*inch, 1*inch])
-    
-    style = TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, 0), 12),
-        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-        ('BACKGROUND', (0, -1), (-1, -1), colors.grey),
-        ('TEXTCOLOR', (0, -1), (-1, -1), colors.whitesmoke),
-        ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, -1), (-1, -1), 12),
-        ('GRID', (0, 0), (-1, -1), 1, colors.black),
-        ('BOX', (0, 0), (-1, -1), 2, colors.black),
-        ('LINEBELOW', (0, 0), (-1, 0), 2, colors.black),
-        ('LINEABOVE', (0, -1), (-1, -1), 2, colors.black),
-    ])
-    table.setStyle(style)
-    
-    elements.append(table)
-    
-    doc.build(elements)
-    
-    buffer.seek(0)
-    return FileResponse(buffer, as_attachment=True, filename=f'reporte_inventario_{datetime.now().strftime("%Y%m%d")}.pdf')
-
-@csrf_exempt  # Agregamos esto temporalmente para pruebas
-def editar_fabricante(request, id):
-    if request.method == 'POST':
-        try:
-            # Debug prints
-            print("="*50)
-            print("Recibiendo petición POST")
-            print("ID recibido:", id)
-            print("POST data:", request.POST)
-            
-            fabricante = get_object_or_404(Fabricante, id_fabricante=id)  # Cambiado a id_fabricante
-            print("Fabricante encontrado:", fabricante)
-            
-            # Obtener los datos
-            nuevo_nombre = request.POST.get('fabricante')
-            nuevo_numero = request.POST.get('numero_productos')
-            nuevo_estado = request.POST.get('estado')
-            
-            print("Datos a actualizar:")
-            print(f"Nombre: {nuevo_nombre}")
-            print(f"Número productos: {nuevo_numero}")
-            print(f"Estado: {nuevo_estado}")
-            
-            # Actualizar los datos
-            fabricante.fabricante = nuevo_nombre
-            fabricante.numero_productos = nuevo_numero
-            fabricante.estado = nuevo_estado
-            fabricante.save()
-            
-            print("Fabricante actualizado exitosamente")
-            print("="*50)
-            
-            return JsonResponse({'success': True})
-            
-        except Exception as e:
-            import traceback
-            print("ERROR:", str(e))
-            print(traceback.format_exc())
-            return JsonResponse({'success': False, 'error': str(e)})
-    
-    return JsonResponse({'success': False, 'error': 'Método no permitido'})
-
-@csrf_exempt
-def borrar_fabricante(request, id):
-    try:
-        fabricante = get_object_or_404(Fabricante, id_fabricante=id)  # Usamos id_fabricante
-        fabricante.delete()
-        return JsonResponse({'success': True})
-    except Exception as e:
-        return JsonResponse({'success': False, 'error': str(e)})
-
-def login_view(request):
-    if request.method == 'POST':
-        username = request.POST.get('username')
-        password = request.POST.get('password')
-        user = authenticate(request, username=username, password=password)
-        
-        if user is not None:
-            login(request, user)
-            return redirect('Inventario:panel_control')
-        else:
-            messages.error(request, 'Usuario o contraseña incorrectos')
-    
-    return render(request, 'Inventario/login.html')
-
-def logout_view(request):
-    logout(request)
-    return redirect('Inventario:login')  # Redirigimos al login usando el namespace correcto
-
-@require_http_methods(["POST"])
-@transaction.atomic
-def guardar_venta(request):
-    try:
-        data = json.loads(request.body)
-        print("\n=== DATOS RECIBIDOS ===")
-        print(data)
-
-        # Generar número de venta
-        fecha_actual = datetime.now()
-        prefijo = fecha_actual.strftime('%Y%m')
-        ultimo_numero = Venta.objects.filter(
-            numero_factura__startswith=prefijo
-        ).aggregate(
-            max_num=Max('numero_factura')
-        )['max_num']
-        
-        contador = int(ultimo_numero[-4:]) + 1 if ultimo_numero else 1
-        nuevo_numero = f"{prefijo}{contador:04d}"
-
-        # 1. Crear la venta básica
-        venta = Venta.objects.create(
-            numero_factura=nuevo_numero,
-            cliente_id=data['cliente'],
-            vendedor=request.user,
-            fecha=timezone.now(),
-            neto=data['neto'],
-            iva=data['iva'],
-            total=data['total']
-        )
-        print(f"Venta creada con ID: {venta.id}")
-
-        # Procesar cada detalle
-        for detalle in data['detalles']:
-            print("\n=== PROCESANDO PRODUCTO ===")
-            print(f"Detalle completo: {detalle}")
-            
-            try:
-                # Buscar el producto por código Y nombre para asegurar que sea el correcto
-                producto = Producto.objects.filter(
-                    codigo=detalle['codigo'],
-                    nombre=detalle['producto']  # Usamos el nombre 'Laptop' que viene en el detalle
-                ).first()  # Usamos first() en lugar de get()
-
-                if not producto:
-                    raise ValueError(f"No se encontró el producto {detalle['producto']} con código {detalle['codigo']}")
-
-                print(f"Producto encontrado: {producto.nombre}")
-                print(f"Stock actual: {producto.stock}")
-                
-                # Crear detalle de venta
-                DetalleVenta.objects.create(
-                    venta=venta,
-                    producto=producto,
-                    cantidad=detalle['cantidad'],
-                    precio_unitario=detalle['precio_unitario'],
-                    precio_total=detalle['precio_total']
-                )
-
-                # Actualizar stock
-                stock_anterior = producto.stock
-                nuevo_stock = stock_anterior - int(detalle['cantidad'])
-                
-                print(f"Actualizando stock de {stock_anterior} a {nuevo_stock}")
-                
-                # Actualizar usando update() y filter con nombre y código
-                Producto.objects.filter(
-                    id=producto.id,
-                    nombre=detalle['producto']
-                ).update(stock=nuevo_stock)
-                
-                print(f"Stock actualizado para {producto.nombre}")
-
-            except Exception as e:
-                print(f"ERROR al procesar producto: {str(e)}")
-                raise
-
-        return JsonResponse({
-            'status': 'success',
-            'message': '¡Venta realizada exitosamente!',
-            'numero_venta': nuevo_numero
-        })
-
-    except Exception as e:
-        print(f"Error general: {str(e)}")
-        return JsonResponse({
-            'status': 'error',
-            'message': str(e)
-        }, status=400)
-
-def lista_productos(request):
-    productos = Producto.objects.all().values(
-        'codigo', 
-        'descripcion', 
-        'stock', 
-        'precio'
-    )
-    return JsonResponse(list(productos), safe=False)
-
+@login_required
 def admin_facturas(request):
-    # Obtiene todas las ventas de la tabla Ventas
+    # Obtener todas las ventas
     ventas = Venta.objects.all().order_by('-fecha')
-    
-    context = {
-        'ventas': ventas,  # Cambiamos 'facturas' por 'ventas'
-    }
-    return render(request, 'Inventario/admin_facturas.html', context)
-
-@csrf_exempt
-@login_required
-@require_POST
-def borrar_venta(request, venta_id):
-    try:
-        print(f"Intentando borrar venta {venta_id}")  # Debug
-        venta = Venta.objects.get(id=venta_id)
-        venta.delete()
-        return JsonResponse({'success': True})
-    except Venta.DoesNotExist:
-        error = f"Venta {venta_id} no encontrada"
-        print(error)  # Debug
-        return JsonResponse({'success': False, 'error': error})
-    except Exception as e:
-        error = f"Error al borrar venta: {str(e)}"
-        print(error)  # Debug
-        print(traceback.format_exc())  # Debug completo
-        return JsonResponse({'success': False, 'error': error})
-
-@login_required
-def editar_venta(request, venta_id):
-    venta = get_object_or_404(Venta, id=venta_id)
-    detalles = DetalleVenta.objects.filter(venta=venta)
+    # Obtener todos los clientes para el filtro
     clientes = Cliente.objects.all()
     
     context = {
-        'venta': venta,
-        'detalles': detalles,
+        'ventas': ventas,
         'clientes': clientes,
+        'active_page': 'admin_facturas'
     }
-    return render(request, 'Inventario/editar_venta.html', context)
-
-@login_required
-@require_POST
-def actualizar_venta(request):
-    try:
-        data = json.loads(request.body)
-        venta = Venta.objects.get(id=data['id'])
-        
-        # Primero devolvemos el stock de los productos de la venta original
-        detalles_antiguos = DetalleVenta.objects.filter(venta=venta)
-        for detalle in detalles_antiguos:
-            producto = detalle.producto
-            producto.stock += detalle.cantidad
-            producto.save()
-        
-        # Validar stock para los nuevos detalles
-        for detalle in data['detalles']:
-            producto = Producto.objects.get(codigo=detalle['codigo'])
-            if producto.stock < int(detalle['cantidad']):
-                # Revertir los cambios de stock
-                for detalle_antiguo in detalles_antiguos:
-                    producto = detalle_antiguo.producto
-                    producto.stock -= detalle_antiguo.cantidad
-                    producto.save()
-                return JsonResponse({
-                    'success': False,
-                    'error': f'Stock insuficiente para el producto {producto.nombre}. Stock actual: {producto.stock}'
-                })
-        
-        # Actualizar datos básicos de la venta
-        venta.numero_factura = data['numero_factura']
-        venta.cliente_id = data['cliente']
-        
-        # Calcular totales
-        neto = sum(detalle['precio_total'] for detalle in data['detalles'])
-        iva = neto * 0.19
-        total = neto + iva
-        
-        venta.neto = neto
-        venta.iva = iva
-        venta.total = total
-        venta.save()
-        
-        # Eliminar detalles anteriores
-        DetalleVenta.objects.filter(venta=venta).delete()
-        
-        # Crear nuevos detalles y actualizar stock
-        for detalle in data['detalles']:
-            producto = Producto.objects.get(codigo=detalle['codigo'])
-            cantidad = int(detalle['cantidad'])
-            
-            DetalleVenta.objects.create(
-                venta=venta,
-                producto=producto,
-                cantidad=cantidad,
-                precio_unitario=detalle['precio_unitario'],
-                precio_total=detalle['precio_total']
-            )
-            
-            # Actualizar stock
-            producto.stock -= cantidad
-            producto.save()
-        
-        return JsonResponse({
-            'success': True,
-            'message': 'Venta actualizada correctamente y stock actualizado'
-        })
-        
-    except Venta.DoesNotExist:
-        return JsonResponse({
-            'success': False,
-            'error': 'Venta no encontrada'
-        })
-    except Exception as e:
-        return JsonResponse({
-            'success': False,
-            'error': str(e)
-        })
-
-@login_required
-def perfil_empresa(request):
-    empresa = PerfilEmpresa.objects.first()
-    
-    # Obtener todas las zonas horarias y organizarlas por región
-    zonas_horarias = {}
-    for tz in pytz.common_timezones:
-        region = tz.split('/')[0]
-        if region not in zonas_horarias:
-            zonas_horarias[region] = []
-        zonas_horarias[region].append(tz)
-    
-    if request.method == 'POST':
-        try:
-            if not empresa:
-                empresa = PerfilEmpresa()
-            
-            empresa.nombre = request.POST.get('nombre')
-            empresa.numero_registro = request.POST.get('numero_registro')
-            empresa.correo_electronico = request.POST.get('correo_electronico')
-            empresa.telefono = request.POST.get('telefono')
-            empresa.moneda = request.POST.get('moneda')
-            empresa.zona_horaria = request.POST.get('zona_horaria')
-            
-            # Manejo del logo
-            if request.FILES.get('logo'):
-                empresa.logo = request.FILES['logo']
-            
-            # Datos de dirección
-            empresa.calle = request.POST.get('calle')
-            empresa.ciudad = request.POST.get('ciudad')
-            empresa.region_provincia = request.POST.get('region_provincia')
-            empresa.codigo_postal = request.POST.get('codigo_postal')
-            empresa.pais = request.POST.get('pais')
-            
-            empresa.save()
-            messages.success(request, 'Perfil de empresa actualizado correctamente')
-            return redirect('perfil_empresa')
-        except Exception as e:
-            messages.error(request, f'Error al guardar: {str(e)}')
-    
-    return render(request, 'Inventario/perfil_empresa.html', {'empresa': empresa})
+    return render(request, 'Inventario/admin_facturas.html', context)
 
 def ver_pdf(request, venta_id):
     # Obtener los datos
@@ -1700,13 +1333,36 @@ def borrar_fabricante(request, id):
         return JsonResponse({'success': False, 'error': str(e)})
 
 def login_view(request):
+    # Forzar el cierre de sesión de cualquier usuario anterior
+    logout(request)
+    
+    # Si el usuario ya está autenticado (después del nuevo login), redirigir al panel de control
+    if request.user.is_authenticated:
+        return redirect('Inventario:panel_control')
+    
     if request.method == 'POST':
         username = request.POST.get('username')
         password = request.POST.get('password')
+        
+        if not username or not password:
+            messages.error(request, 'Por favor, ingrese usuario y contraseña')
+            return render(request, 'Inventario/login.html')
+            
         user = authenticate(request, username=username, password=password)
         
         if user is not None:
+            # Limpiar completamente la sesión anterior
+            request.session.flush()
+            
+            # Crear nueva sesión
             login(request, user)
+            
+            # Configurar la sesión para que expire al cerrar el navegador
+            request.session.set_expiry(0)
+            
+            # Establecer una marca de tiempo de inicio de sesión
+            request.session['login_time'] = timezone.now().timestamp()
+            
             return redirect('Inventario:panel_control')
         else:
             messages.error(request, 'Usuario o contraseña incorrectos')
@@ -1714,8 +1370,40 @@ def login_view(request):
     return render(request, 'Inventario/login.html')
 
 def logout_view(request):
-    logout(request)
-    return redirect('Inventario:login')  # Redirigimos al login usando el namespace correcto
+    if request.user.is_authenticated:
+        # Limpiar la sesión actual
+        request.session.flush()
+        # Realizar el logout
+        logout(request)
+    
+    # Crear respuesta de redirección
+    response = redirect('Inventario:login')
+    
+    # Eliminar todas las cookies relacionadas con la sesión
+    response.delete_cookie('sessionid')
+    response.delete_cookie('csrftoken')
+    
+    # Asegurar que el navegador no almacene en caché la página de login
+    response['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    response['Pragma'] = 'no-cache'
+    response['Expires'] = '0'
+    
+    return response
+    response.delete_cookie('sessionid')
+    return response
+
+@login_required
+def editar_perfil(request):
+    profile, created = Profile.objects.get_or_create(user=request.user)
+    if request.method == 'POST':
+        form = ProfileForm(request.POST, request.FILES, instance=profile)
+        if form.is_valid():
+            form.save()
+            messages.success(request, '¡Perfil actualizado correctamente!')
+            return redirect('Inventario:panel_control')
+    else:
+        form = ProfileForm(instance=profile)
+    return render(request, 'Inventario/editar_perfil.html', {'form': form, 'profile': profile})
 
 
 

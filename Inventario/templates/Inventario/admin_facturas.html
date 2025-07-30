@@ -135,12 +135,18 @@
     </div>
     <div class="col-md-2 text-end">
         <div class="btn-group mb-3">
-            <a href='/nueva_venta' class="btn btn-primary">
+            <a href="{% url 'Inventario:nueva_venta' %}" class="btn btn-primary">
                 <i class="fas fa-plus"></i> Nuevo
             </a>
-            <button type="button" class="btn btn-secondary dropdown-toggle" data-toggle="dropdown">
-                Mostrar <span class="caret"></span>
+            <button type="button" class="btn btn-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                Mostrar
             </button>
+            <ul class="dropdown-menu">
+                <li><a class="dropdown-item" href="#">10 registros</a></li>
+                <li><a class="dropdown-item" href="#">25 registros</a></li>
+                <li><a class="dropdown-item" href="#">50 registros</a></li>
+                <li><a class="dropdown-item" href="#">Todos</a></li>
+            </ul>
         </div>
     </div>
 </div>
@@ -181,17 +187,17 @@
                             </button>
                             <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
                                 <li>
-                                    <a class="dropdown-item" href="/admin_facturas/editar_venta/{{ venta.id }}/">
+                                    <a class="dropdown-item" href="{% url 'Inventario:editar_venta' venta.id %}">
                                         <i class="fas fa-edit me-2"></i> Editar
                                     </a>
                                 </li>
                                 <li>
-                                    <a class="dropdown-item" href="/ver_pdf/{{ venta.id }}/" target="_blank">
+                                    <a class="dropdown-item" href="{% url 'Inventario:ver_pdf' venta.id %}" target="_blank">
                                         <i class="far fa-file-pdf me-2"></i> Ver PDF
                                     </a>
                                 </li>
                                 <li>
-                                    <a class="dropdown-item text-danger" href="#" onclick="confirmarBorrado({{ venta.id }}); return false;">
+                                    <a class="dropdown-item text-danger" href="javascript:void(0)" onclick="confirmarBorrado('{{ venta.id }}')">
                                         <i class="fas fa-trash-alt me-2"></i> Borrar
                                     </a>
                                 </li>
@@ -209,51 +215,75 @@
     </table>
 </div>
 
-<!-- Agrega este script al final del archivo -->
 <script>
-function confirmarBorrado(ventaId) {
-    if (confirm('¿Está seguro que desea eliminar esta venta?')) {
-        fetch(`/borrar_venta/${ventaId}/`, {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': getCookie('csrftoken'),
-            }
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Error en la respuesta del servidor');
-            }
-            return response.json();
-        })
-        .then(data => {
-            if (data.success) {
-                window.location.reload();
-            } else {
-                console.error('Error del servidor:', data);
-                alert('Error al eliminar la venta: ' + (data.error || 'Error desconocido'));
-            }
-        })
-        .catch(error => {
-            console.error('Error completo:', error);
-            alert('Error al eliminar la venta');
+    document.addEventListener('DOMContentLoaded', function() {
+        // Inicializar todos los dropdowns de Bootstrap
+        var dropdowns = document.querySelectorAll('.dropdown-toggle');
+        dropdowns.forEach(function(dropdown) {
+            new bootstrap.Dropdown(dropdown);
         });
-    }
-}
+    });
 
-function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        const cookies = document.cookie.split(';');
-        for (let i = 0; i < cookies.length; i++) {
-            const cookie = cookies[i].trim();
-            if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
             }
         }
+        return cookieValue;
     }
-    return cookieValue;
-}
+
+    function confirmarBorrado(ventaId) {
+        Swal.fire({
+            title: '¿Está seguro?',
+            text: '¿Desea eliminar esta venta? Esta acción no se puede deshacer.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Sí, eliminar',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                const csrftoken = getCookie('csrftoken');
+                fetch(`{% url 'Inventario:borrar_venta' '0' %}`.replace('0', ventaId), {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrftoken,
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        Swal.fire(
+                            '¡Eliminado!',
+                            'La venta ha sido eliminada correctamente.',
+                            'success'
+                        ).then(() => {
+                            window.location.reload();
+                        });
+                    } else {
+                        throw new Error(data.error || 'Error al eliminar la venta');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    Swal.fire(
+                        'Error',
+                        'Ha ocurrido un error al eliminar la venta. Por favor, inténtelo de nuevo.',
+                        'error'
+                    );
+                });
+            }
+        });
+    }
 </script>
 {% endblock %}
 

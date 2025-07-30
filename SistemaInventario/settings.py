@@ -49,6 +49,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'Inventario.middleware.UpdateLastSeenMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -66,6 +67,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'Inventario.context_processors.user_profile',
             ],
         },
     },
@@ -119,7 +121,9 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
-LOGIN_URL ='/login'
+LOGIN_URL = '/login/'
+LOGIN_REDIRECT_URL = '/panel_control/'
+LOGOUT_REDIRECT_URL = '/login/'
 STATIC_URL = 'static/'
 STATICfiles_DIRS = [
     os.path.join(BASE_DIR, 'SistemaInventario/static')
@@ -131,3 +135,11 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Configuración de sesiones
+SESSION_COOKIE_AGE = 3600  # 1 hora en segundos
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+SESSION_SAVE_EVERY_REQUEST = True
+SESSION_COOKIE_SECURE = True  # Solo enviar cookie por HTTPS
+SESSION_COOKIE_HTTPONLY = True  # No permitir acceso a la cookie via JavaScript
+SESSION_COOKIE_SAMESITE = 'Strict'  # Protección contra CSRF

@@ -6,31 +6,141 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - Sistema de Inventario</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        :root {
+            --main-bg: #f8f9fa;
+            --card-bg: #fff;
+            --primary: #2563eb;
+            --primary-dark: #1e40af;
+            --text: #222;
+            --input-bg: #f1f5f9;
+            --input-focus: #dbeafe;
+            --logo-bg: #2563eb;
+        }
+        [data-theme="dark"] {
+            --main-bg: #18181b;
+            --card-bg: #23232b;
+            --primary: #60a5fa;
+            --primary-dark: #2563eb;
+            --text: #f3f4f6;
+            --input-bg: #27272a;
+            --input-focus: #1e293b;
+            --logo-bg: #60a5fa;
+        }
         body {
-            background-color: #f8f9fa;
+            background: var(--main-bg);
+            color: var(--text);
+            transition: background 0.3s, color 0.3s;
         }
         .login-container {
             max-width: 400px;
-            margin: 100px auto;
-            padding: 20px;
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            margin: 80px auto;
+            padding: 30px 25px 25px 25px;
+            background: var(--card-bg);
+            border-radius: 18px;
+            box-shadow: 0 4px 32px rgba(0,0,0,0.10);
+            position: relative;
+            overflow: hidden;
         }
         .login-logo {
-            text-align: center;
-            margin-bottom: 30px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 18px;
+        }
+        .logo-circle {
+            background: var(--logo-bg);
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 8px rgba(37,99,235,0.15);
+            animation: popIn 0.7s cubic-bezier(.68,-0.55,.27,1.55);
+        }
+        .logo-circle i {
+            color: #fff;
+            font-size: 2rem;
+        }
+        @keyframes popIn {
+            0% { transform: scale(0.5); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .welcome {
+            font-size: 1.2rem;
+            font-weight: 500;
+            margin-bottom: 10px;
+            opacity: 0;
+            animation: fadeIn 1.2s 0.3s forwards;
+        }
+        @keyframes fadeIn {
+            to { opacity: 1; }
+        }
+        .form-label {
+            font-weight: 500;
+        }
+        .input-group-text {
+            background: var(--input-bg);
+            border: none;
+        }
+        .form-control {
+            background: var(--input-bg);
+            border: 1.5px solid #e5e7eb;
+            transition: box-shadow 0.2s, border 0.2s;
+        }
+        .form-control:focus {
+            background: var(--input-focus);
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px var(--primary-dark, #2563eb33);
+        }
+        .toggle-password {
+            cursor: pointer;
+        }
+        .btn-primary {
+            background: linear-gradient(90deg, var(--primary), var(--primary-dark));
+            border: none;
+            font-weight: 600;
+            transition: background 0.2s, transform 0.1s;
+        }
+        .btn-primary:hover {
+            background: linear-gradient(90deg, var(--primary-dark), var(--primary));
+            transform: translateY(-2px) scale(1.03);
+        }
+        .theme-switch {
+            position: absolute;
+            top: 18px;
+            right: 18px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            z-index: 2;
+        }
+        .theme-switch input {
+            accent-color: var(--primary);
+        }
+        .alert {
+            animation: fadeIn 0.7s;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="login-container">
-            <div class="login-logo">
-                <h2>Sistema de Inventario</h2>
+            <div class="theme-switch">
+                <i class="fa-solid fa-moon"></i>
+                <input type="checkbox" id="theme-toggle">
+                <i class="fa-solid fa-sun"></i>
             </div>
-            
+            <div class="login-logo">
+                <div class="logo-circle">
+                    <i class="fa-solid fa-boxes-stacked"></i>
+                </div>
+                <div class="welcome" id="welcome-msg">¡Bienvenido al Sistema de Inventario!</div>
+                <h2 style="font-weight:700;">Sistema de Inventario</h2>
+            </div>
             {% if messages %}
                 {% for message in messages %}
                     <div class="alert alert-{{ message.tags }}">
@@ -38,22 +148,75 @@
                     </div>
                 {% endfor %}
             {% endif %}
-            
-            <form method="POST">
+            <form method="POST" autocomplete="off">
                 {% csrf_token %}
                 <div class="mb-3">
                     <label for="username" class="form-label">Usuario</label>
-                    <input type="text" class="form-control" id="username" name="username" required>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fa-solid fa-user"></i></span>
+                        <input type="text" class="form-control" id="username" name="username" required autofocus>
+                    </div>
                 </div>
                 <div class="mb-3">
                     <label for="password" class="form-label">Contraseña</label>
-                    <input type="password" class="form-control" id="password" name="password" required>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fa-solid fa-lock"></i></span>
+                        <input type="password" class="form-control" id="password" name="password" required>
+                        <span class="input-group-text toggle-password" id="togglePassword"><i class="fa-solid fa-eye"></i></span>
+                    </div>
                 </div>
-                <button type="submit" class="btn btn-primary w-100">Iniciar Sesión</button>
+                <button type="submit" class="btn btn-primary w-100" id="loginBtn">Iniciar Sesión</button>
             </form>
         </div>
     </div>
-    
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Mostrar/ocultar contraseña
+        const passwordInput = document.getElementById('password');
+        const togglePassword = document.getElementById('togglePassword');
+        togglePassword.addEventListener('click', function() {
+            const type = passwordInput.type === 'password' ? 'text' : 'password';
+            passwordInput.type = type;
+            this.querySelector('i').classList.toggle('fa-eye');
+            this.querySelector('i').classList.toggle('fa-eye-slash');
+        });
+
+        // Modo oscuro/claro con persistencia
+        const themeToggle = document.getElementById('theme-toggle');
+        const root = document.documentElement;
+        function setTheme(theme) {
+            if (theme === 'dark') {
+                root.setAttribute('data-theme', 'dark');
+                themeToggle.checked = true;
+            } else {
+                root.setAttribute('data-theme', 'light');
+                themeToggle.checked = false;
+            }
+            localStorage.setItem('theme', theme);
+        }
+        // Inicializar tema
+        const savedTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        setTheme(savedTheme);
+        themeToggle.addEventListener('change', () => {
+            setTheme(themeToggle.checked ? 'dark' : 'light');
+        });
+
+        // Mensaje de bienvenida animado
+        const welcomeMsg = document.getElementById('welcome-msg');
+        let messages = [
+            '¡Bienvenido al Sistema de Inventario!',
+            'Gestiona tu inventario de forma eficiente.',
+            '¡Nos alegra verte de nuevo!'
+        ];
+        let idx = 0;
+        setInterval(() => {
+            idx = (idx + 1) % messages.length;
+            welcomeMsg.style.opacity = 0;
+            setTimeout(() => {
+                welcomeMsg.textContent = messages[idx];
+                welcomeMsg.style.opacity = 1;
+            }, 400);
+        }, 4000);
+    </script>
 </body>
 </html>

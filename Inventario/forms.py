@@ -1,5 +1,5 @@
 from django import forms
-from .models import Producto, Fabricante
+from .models import Producto, Fabricante, Profile
 
 class ProductoForm(forms.ModelForm):
     class Meta:
@@ -10,5 +10,10 @@ class FabricanteForm(forms.ModelForm):
     class Meta:
         model = Fabricante
         fields = ['fabricante', 'numero_productos', 'estado']
+
+class ProfileForm(forms.ModelForm):
+    class Meta:
+        model = Profile
+        fields = ['image']
 
 
