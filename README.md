@@ -17,11 +17,11 @@ Sistema web de gestión de inventario desarrollado con Django. Permite administr
 *Proceso de creación de una nueva venta con selección de productos.*
 
 ### Factura PDF
-![Factura PDF](screenshots/factura.png)
+![Factura PDF](screenshots/admin_facturas.png)
 *Ejemplo de factura generada en formato PDF.*
 
 ### Reportes y Estadísticas
-![Reportes](screenshots/reportes.png)
+![Reportes](screenshots/reporte_inventario.png)
 *Visualización de reportes y estadísticas del sistema.*
 
 ## Características 🚀
