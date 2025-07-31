@@ -186,6 +186,13 @@ class Command(BaseCommand):
             self.stdout.write('⚠️ No hay productos o clientes para crear ventas')
             return
             
+        # Obtener el usuario demo como vendedor
+        try:
+            demo_user = User.objects.get(username='demo')
+        except User.DoesNotExist:
+            self.stdout.write('⚠️ Usuario demo no encontrado. Creando ventas sin usuario.')
+            return
+            
         productos = list(Producto.objects.all())
         clientes = list(Cliente.objects.all())
         
@@ -196,7 +203,7 @@ class Command(BaseCommand):
             venta = Venta.objects.create(
                 numero_factura=f'DEMO-{1000 + i}',
                 cliente=cliente,
-                fecha=timezone.now().date(),
+                vendedor=demo_user,
                 neto=Decimal('0.00'),
                 iva=Decimal('0.00'),
                 total=Decimal('0.00')
