@@ -1,11 +1,15 @@
+# Dependencias básicas de Python
+setuptools>=65.0.0
+wheel>=0.37.0
+
 # Framework principal
 Django==5.1.3
 
-# Variables de entorno seguras
-python-dotenv==1.0.1
-
 # Zona horaria (requerido por Django)
 pytz==2023.3
+
+# Variables de entorno seguras
+python-dotenv==1.0.1
 
 # Servidor de producción
 gunicorn==21.2.0
