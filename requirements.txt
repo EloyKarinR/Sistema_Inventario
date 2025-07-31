@@ -4,6 +4,9 @@ Django==5.1.3
 # Variables de entorno seguras
 python-dotenv==1.0.1
 
+# Zona horaria (requerido por Django)
+pytz==2023.3
+
 # Servidor de producción
 gunicorn==21.2.0
 
