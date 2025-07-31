@@ -1,3 +1,10 @@
+# ARCHIVOS SENSIBLES - DJANGO
+.env
+*.env
+*.env.local
+*.env.*.local
+local_settings.py
+
 # Python
 *.py[cod]
 __pycache__/
