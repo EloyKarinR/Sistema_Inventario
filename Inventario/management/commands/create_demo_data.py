@@ -44,11 +44,7 @@ class Command(BaseCommand):
         
         # Crear perfil si no existe
         profile, created = Profile.objects.get_or_create(
-            user=user,
-            defaults={
-                'telefono': '+57 300 123 4567',
-                'direccion': 'Dirección de demostración'
-            }
+            user=user
         )
         
         if created:
