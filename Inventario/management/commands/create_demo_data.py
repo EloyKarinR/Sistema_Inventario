@@ -57,52 +57,57 @@ class Command(BaseCommand):
         productos_ejemplo = [
             {
                 'codigo': 'DEMO001',
+                'modelo': 'Inspiron 15 3000',
                 'nombre': 'Laptop Dell Inspiron 15',
                 'descripcion': 'Laptop para uso profesional con 8GB RAM y 256GB SSD',
                 'fabricante': 'Dell',
                 'stock': 25,
+                'costo': Decimal('700.00'),
                 'precio': Decimal('850.00'),
-                'categoria': 'Computadoras',
                 'estado': 'Activo'
             },
             {
                 'codigo': 'DEMO002', 
+                'modelo': 'MX Master 3',
                 'nombre': 'Mouse Inalámbrico Logitech',
                 'descripcion': 'Mouse inalámbrico ergonómico con batería de larga duración',
                 'fabricante': 'Logitech',
                 'stock': 50,
+                'costo': Decimal('20.00'),
                 'precio': Decimal('25.99'),
-                'categoria': 'Accesorios',
                 'estado': 'Activo'
             },
             {
                 'codigo': 'DEMO003',
+                'modelo': 'F24T450FQN',
                 'nombre': 'Monitor Samsung 24"',
                 'descripcion': 'Monitor Full HD 24 pulgadas para oficina',
                 'fabricante': 'Samsung',
                 'stock': 15,
+                'costo': Decimal('150.00'),
                 'precio': Decimal('180.00'),
-                'categoria': 'Monitores',
                 'estado': 'Activo'
             },
             {
                 'codigo': 'DEMO004',
+                'modelo': 'K95 RGB Platinum',
                 'nombre': 'Teclado Mecánico RGB',
                 'descripcion': 'Teclado mecánico gaming con iluminación RGB',
                 'fabricante': 'Corsair',
                 'stock': 30,
+                'costo': Decimal('100.00'),
                 'precio': Decimal('120.50'),
-                'categoria': 'Accesorios',
                 'estado': 'Activo'
             },
             {
                 'codigo': 'DEMO005',
+                'modelo': 'LaserJet Pro M15w',
                 'nombre': 'Impresora HP LaserJet',
                 'descripcion': 'Impresora láser monocromática para oficina',
                 'fabricante': 'HP',
                 'stock': 8,
+                'costo': Decimal('250.00'),
                 'precio': Decimal('295.00'),
-                'categoria': 'Impresoras',
                 'estado': 'Activo'
             }
         ]
