@@ -1,24 +1,189 @@
 {% extends 'Inventario/base.html' %}
+{% load static %}
 
 {% block content %}
 <style>
     .active7 {
-        color: green !important; /* Cambia el color del texto a verde */
-        font-weight: bold;/* Opcional: hace que el texto sea más grueso */
+        color: green !important;
+        font-weight: bold;
+    }
+
+    #resultadosBusqueda {
+        max-height: 300px;
+        overflow-y: auto;
+    }
+
+    .cliente-seleccionado {
+        background-color: #e9ecef;
+        padding: 15px;
+        border-radius: 5px;
+        margin-bottom: 15px;
+    }
+    
+    #resultadosBusqueda {
+        position: relative;
+        z-index: 1000;
+    }
+    
+    /* Toast personalizado */
+    .toast {
+        background-color: #fff;
+        border-left: 4px solid #dc3545;
+    }
+    
+    .toast-header {
+        background-color: #fff;
+        border-bottom: none;
+        color: #dc3545;
+    }
+    
+    #resultadosBusqueda .list-group {
+        width: 100%;
+        max-height: 320px;
+        overflow-y: auto;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+        border-radius: 8px;
+        background: white;
+        border: 1px solid rgba(0,0,0,0.1);
+        padding: 4px;
+        margin-top: 2px;
+    }
+    
+    .producto-item {
+        transition: all 0.2s ease;
+        border: none;
+        border-radius: 6px;
+        margin-bottom: 2px;
+        padding: 8px 12px;
+    }
+    
+    .producto-item:hover,
+    .producto-item.active {
+        background-color: #f8f9fa;
+        transform: translateX(2px);
+    }
+    
+    .producto-item mark {
+        background-color: #e7f0ff;
+        padding: 0.1em 0.3em;
+        border-radius: 3px;
+        color: #0d6efd;
+    }
+    
+    .producto-imagen img {
+        transition: transform 0.2s ease;
+    }
+    
+    .producto-item:hover .producto-imagen img {
+        transform: scale(1.05);
+    }
+    
+    .producto-item.disabled {
+        opacity: 0.8;
+        background-color: #f8f9fa;
+    }
+    
+    .producto-item.disabled:hover {
+        transform: none;
+        background-color: #f8f9fa;
+    }
+    
+    .badge.bg-danger {
+        font-weight: normal;
+        padding: 0.2em 0.4em;
+    }
+    
+    /* Estilo para el scrollbar */
+    #resultadosBusqueda .list-group::-webkit-scrollbar {
+        width: 8px;
+    }
+    
+    #resultadosBusqueda .list-group::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 4px;
+    }
+    
+    #resultadosBusqueda .list-group::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 4px;
+    }
+    
+    #resultadosBusqueda .list-group::-webkit-scrollbar-thumb:hover {
+        background: #666;
+    }
+    
+    /* Prevenir problemas de espaciado con traducciones automáticas */
+    .btn {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    
+    .btn i {
+        margin-right: 0.25rem !important;
+        display: inline-block;
+        width: auto;
+        flex-shrink: 0;
+    }
+    
+    .input-group .btn {
+        flex-shrink: 0;
+        min-width: auto;
+    }
+    
+    /* Mejorar el espaciado de íconos en botones */
+    .btn .fas, .btn .far, .btn .fab {
+        margin-right: 0.3rem !important;
+        vertical-align: middle;
+    }
+    
+    /* Asegurar que los botones mantengan su ancho */
+    .btn-primary, .btn-success, .btn-secondary {
+        padding: 0.375rem 0.75rem;
+        line-height: 1.5;
+    }
+    
+    /* Prevenir que la traducción afecte el layout */
+    .modal-header, .modal-footer, .card-footer {
+        flex-wrap: nowrap;
+    }
+    
+    /* Asegurar que los input-group mantengan su estructura */
+    .input-group {
+        display: flex !important;
+        flex-wrap: nowrap !important;
+    }
+    
+    .input-group > * {
+        flex-shrink: 0;
+    }
+    
+    /* Proteger elementos específicos de traducciones */
+    .btn-sm {
+        min-height: 31px;
+        font-size: 0.875rem;
+    }
+    
+    /* Mejorar estabilidad de la tabla */
+    .table td, .table th {
+        white-space: nowrap;
+        vertical-align: middle;
+    }
+    
+    .table .btn {
+        margin: 0;
     }
 </style>
+
 <div class="container-fluid">
-    <!-- Título con icono -->
-    <div class="d-flex align-items-center mb-3">
-        <i class="fas fa-file-invoice me-2"></i>
-        <h4 class="mb-0">Agregar nueva venta</h4>
+    <!-- Título principal -->
+    <div class="d-flex align-items-center mb-4">
+        <i class="fas fa-file-invoice me-2 text-primary"></i>
+        <h2 class="mb-0">Nueva Venta</h2>
     </div>
 
     <!-- Tarjeta principal -->
     <div class="card">
-        <div class="card-header">
-            <h5 class="card-title mb-0">Nueva Venta</h5>
-        </div>
         <div class="card-body">
             <!-- Detalles de la Factura -->
             <div class="row mb-4">
@@ -37,9 +202,10 @@
                             </optgroup>
                         </select>
                         <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalNuevoCliente">
-                            <i class="fas fa-plus"></i> Nuevo
+                            <i class="fas fa-plus me-1"></i> Nuevo
                         </button>
                     </div>
+                    <small class="text-muted">Selecciona un cliente o usa "Persona Natural" para venta al público</small>
                 </div>
                 <div class="col-md-4">
                     <label class="form-label">Número de Factura</label>
@@ -54,44 +220,27 @@
                         </button>
                     </div>
                 </div>
+                <!-- Se eliminó el campo redundante de Factura N° -->
                 <div class="col-md-4">
-                    <label>Factura N°</label>
-                    <div class="input-group">
-                        <input type="number" 
-                               class="form-control" 
-                               id="numero_factura" 
-                               name="numero_factura" 
-                               placeholder="Ingrese número de factura"
-                               value="{{ siguiente_numero_factura }}"
-                               min="1"
-                               readonly
-                               style="background-color: white !important;
-                                  border: 1px solid #ced4da !important;
-                                  pointer-events: auto !important;
-                                  opacity: 1 !important;"
-                           required>
-                </div>
             </div>
 
             <!-- Búsqueda de productos -->
-            <div class="row mb-3">
+            <div class="row mb-3 mt-3">
                 <div class="col-md-10">
                     <div class="input-group">
                         <span class="input-group-text"><i class="fas fa-search"></i></span>
-                        <input type="text" class="form-control" id="busquedaProducto" placeholder="Buscar por nombre, código o descripción del producto...">
+                        <input type="text" class="form-control" id="busquedaProducto" placeholder="Buscar por nombre, código o descripción del producto..." autocomplete="off">
+                    </div>
+                    <div id="resultadosBusqueda" class="position-relative w-100 mt-1" style="display: none; z-index: 1000;">
+                        <div class="list-group" style="max-height: 300px; overflow-y: auto;">
+                            <!-- Aquí aparecerán los resultados -->
+                        </div>
                     </div>
                 </div>
                 <div class="col-md-2">
                     <button type="button" class="btn btn-primary w-100" data-bs-toggle="modal" data-bs-target="#modalProductos">
-                        <i class="fas fa-box"></i> Productos
+                        <i class="fas fa-box me-2"></i>Productos
                     </button>
-                </div>
-            </div>
-
-            <!-- Resumen de la búsqueda -->
-            <div id="resultadosBusqueda" class="mb-3" style="display: none;">
-                <div class="list-group">
-                    <!-- Los resultados se agregarán aquí dinámicamente -->
                 </div>
             </div>
 
@@ -137,7 +286,7 @@
         </div>
         <div class="card-footer text-end">
             <button type="button" class="btn btn-success" onclick="guardarVenta()">
-                <i class="fas fa-save"></i> Guardar e imprimir
+                <i class="fas fa-save me-2"></i>Guardar e imprimir
             </button>
         </div>
     </div>
@@ -158,7 +307,7 @@
                         <div class="input-group">
                             <input type="text" class="form-control" id="buscarProductoInput" placeholder="Buscar productos">
                             <button class="btn btn-outline-secondary" type="button" id="btnBuscarProductoModal">
-                                <i class="fas fa-search"></i> Buscar
+                                <i class="fas fa-search me-2"></i>Buscar
                             </button>
                         </div>
                     </div>
@@ -192,7 +341,7 @@
                                 </td>
                                 <td>
                                     <button class="btn btn-success btn-sm" onclick="agregarProducto(this)">
-                                        <i class="fas fa-cart-plus"></i>
+                                        <i class="fas fa-cart-plus me-1"></i>Agregar
                                     </button>
                                 </td>
                             </tr>
@@ -227,8 +376,52 @@
 </div>
 
 <!-- Modal para nuevo cliente -->
-<div class="modal fade" id="#modalNuevoCliente" tabindex="-1">
-    <!-- Contenido del modal de nuevo cliente -->
+<div class="modal fade" id="modalNuevoCliente" tabindex="-1" aria-labelledby="modalNuevoClienteLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalNuevoClienteLabel">Nuevo Cliente</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formNuevoCliente">
+                    <div class="mb-3">
+                        <label for="nombreCliente" class="form-label">Nombre *</label>
+                        <input type="text" class="form-control" id="nombreCliente" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="rutCliente" class="form-label">RUT/NIT</label>
+                        <input type="text" class="form-control" id="rutCliente" placeholder="Ej: 12345678-9">
+                    </div>
+                    <div class="mb-3">
+                        <label for="telefonoCliente" class="form-label">Teléfono</label>
+                        <input type="tel" class="form-control" id="telefonoCliente">
+                    </div>
+                    <div class="mb-3">
+                        <label for="emailCliente" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="emailCliente">
+                    </div>
+                    <div class="mb-3">
+                        <label for="direccionCliente" class="form-label">Dirección</label>
+                        <textarea class="form-control" id="direccionCliente" rows="2"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="tipoCliente" class="form-label">Tipo de Cliente</label>
+                        <select class="form-select" id="tipoCliente">
+                            <option value="Natural">Persona Natural</option>
+                            <option value="Juridico">Persona Jurídica</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="guardarNuevoCliente()">
+                    <i class="fas fa-save me-2"></i>Guardar Cliente
+                </button>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- Botón para abrir el modal -->
@@ -243,30 +436,47 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <table class="table table-striped" id="tablaProductos">
-                    <thead>
-                        <tr>
-                            <th>Código</th>
-                            <th>Descripción</th>
-                            <th>Stock</th>
-                            <th>Cantidad</th>
-                            <th>Precio</th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for producto in productos %}
-                        <tr>
-                            <td>{{ producto.codigo }}</td>
-                            <td>{{ producto.nombre }}</td>
-                            <td>{{ producto.stock }}</td>
-                            <td><input type="number" value="1" min="1" class="form-control" style="width: 60px;" onchange="actualizarPrecio(this)"></td>
-                            <td>{{ producto.precio }}</td>
-                            <td><button class="btn btn-link text-success" onclick="agregarProducto(this)"><i class="fas fa-cart-plus"></i></button></td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+                <!-- Campo de búsqueda -->
+                <div class="mb-3">
+                    <div class="input-group">
+                        <input type="text" id="buscarProducto" class="form-control" placeholder="Buscar producto por nombre o código...">
+                        <span class="input-group-text">
+                            <i class="fas fa-search"></i>
+                        </span>
+                    </div>
+                </div>
+                
+                <!-- Tabla de productos -->
+                <div style="max-height: 400px; overflow-y: auto;">
+                    <table class="table table-striped" id="tablaProductos">
+                        <thead class="sticky-top bg-white">
+                            <tr>
+                                <th>Código</th>
+                                <th>Descripción</th>
+                                <th>Stock</th>
+                                <th>Cantidad</th>
+                                <th>Precio</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for producto in productos %}
+                            <tr data-producto-id="{{ producto.id }}">
+                                <td>{{ producto.codigo }}</td>
+                                <td>{{ producto.nombre }}</td>
+                                <td>{{ producto.stock }}</td>
+                                <td><input type="number" value="1" min="1" max="{{ producto.stock }}" class="form-control" style="width: 70px;"></td>
+                                <td>${{ producto.precio|floatformat:2 }}</td>
+                                <td>
+                                    <button class="btn btn-success btn-sm" onclick="agregarProducto(this, '{{ producto.id }}')">
+                                        <i class="fas fa-cart-plus me-1"></i>Agregar
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
@@ -278,44 +488,132 @@
 <!-- JavaScript para manejar el modal -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Inicializar el modal
-    const modalProductos = new bootstrap.Modal(document.getElementById('modalProductos'));
-    
-    // Función para cargar productos en el modal
-    function cargarProductosEnModal() {
-        fetch('/api/productos/') // Esta es la URL que necesitarás ajustar según tu configuración
-            .then(response => response.json())
-            .then(productos => {
-                const tbody = document.querySelector('#tablaProductos tbody');
-                tbody.innerHTML = '';
-                
-                productos.forEach(producto => {
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td>${producto.codigo}</td>
-                        <td>${producto.descripcion}</td>
-                        <td>${producto.stock}</td>
-                        <td>
-                            <input type="number" class="form-control form-control-sm" value="1" min="1">
-                        </td>
-                        <td>${producto.precio}</td>
-                        <td>
-                            <button class="btn btn-success btn-sm" onclick="agregarProducto(this)">
-                                <i class="fas fa-cart-plus"></i>
-                            </button>
-                        </td>
-                    `;
-                    tbody.appendChild(tr);
-                });
-            })
-            .catch(error => console.error('Error:', error));
+    // Funcionalidad de búsqueda de productos en tiempo real
+    const buscarProducto = document.getElementById('buscarProducto');
+    const tablaProductos = document.getElementById('tablaProductos');
+    let timeoutId;
+
+    if (buscarProducto) {
+        buscarProducto.addEventListener('input', function() {
+            clearTimeout(timeoutId);
+            timeoutId = setTimeout(() => {
+                const termino = this.value.trim();
+                if (termino.length >= 2) {
+                    buscarProductosEnTiempoReal(termino);
+                } else if (termino.length === 0) {
+                    // Mostrar todos los productos originales
+                    mostrarTodosLosProductos();
+                }
+            }, 300);
+        });
     }
 
-    // Evento para cargar productos cuando se abre el modal
-    document.getElementById('modalProductos').addEventListener('show.bs.modal', function () {
-        cargarProductosEnModal();
-    });
+    function buscarProductosEnTiempoReal(termino) {
+        fetch(`/buscar_productos_venta/?q=${encodeURIComponent(termino)}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    mostrarProductosFiltrados(data.productos);
+                }
+            })
+            .catch(error => console.error('Error en búsqueda:', error));
+    }
+
+    function mostrarProductosFiltrados(productos) {
+        const tbody = tablaProductos.querySelector('tbody');
+        tbody.innerHTML = '';
+        
+        productos.forEach(producto => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${producto.codigo}</td>
+                <td>${producto.nombre}</td>
+                <td>${producto.stock}</td>
+                <td><input type="number" value="1" min="1" max="${producto.stock}" class="form-control" style="width: 70px;"></td>
+                <td>$${parseFloat(producto.precio).toFixed(2)}</td>
+                <td>
+                    <button class="btn btn-success btn-sm" onclick="agregarProducto(this, '${producto.id}')">
+                        <i class="fas fa-cart-plus me-1"></i>Agregar
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function mostrarTodosLosProductos() {
+        // Recargar la página o hacer fetch de todos los productos
+        location.reload();
+    }
 });
+
+// Función para agregar producto a la factura
+function agregarProducto(button, productoId) {
+    const fila = button.closest('tr');
+    const codigo = fila.cells[0].textContent;
+    const nombre = fila.cells[1].textContent;
+    const stock = parseInt(fila.cells[2].textContent);
+    const cantidadInput = fila.querySelector('input[type="number"]');
+    const cantidad = parseInt(cantidadInput.value);
+    const precioTexto = fila.cells[4].textContent.replace('$', '').trim();
+    const precio = parseFloat(precioTexto);
+
+    if (cantidad > stock) {
+        alert('La cantidad no puede ser mayor al stock disponible');
+        return;
+    }
+
+    // Verificar si el producto ya está en la tabla
+    const tablaDetalle = document.querySelector('#detalleFactura tbody');
+    const filasExistentes = tablaDetalle.querySelectorAll('tr');
+    
+    for (let filaExistente of filasExistentes) {
+        if (filaExistente.cells[0].textContent === codigo) {
+            // Si ya existe, incrementar la cantidad
+            const cantidadActual = parseInt(filaExistente.cells[1].textContent);
+            const nuevaCantidad = cantidadActual + cantidad;
+            
+            if (nuevaCantidad > stock) {
+                alert('No hay suficiente stock. Stock disponible: ' + stock);
+                return;
+            }
+            
+            filaExistente.cells[1].textContent = nuevaCantidad;
+            const nuevoTotal = nuevaCantidad * precio;
+            filaExistente.cells[4].textContent = nuevoTotal.toFixed(2);
+            
+            actualizarTotales();
+            
+            // Cerrar el modal después de agregar
+            const modal = bootstrap.Modal.getInstance(document.getElementById('modalProductos'));
+            modal.hide();
+            return;
+        }
+    }
+
+    // Si no existe, agregar nueva fila
+    const nuevaFila = tablaDetalle.insertRow();
+    const precioTotal = precio * cantidad;
+    
+    nuevaFila.innerHTML = `
+        <td>${codigo}</td>
+        <td>${cantidad}</td>
+        <td>${nombre}</td>
+        <td class="text-end">${precio.toFixed(2)}</td>
+        <td class="text-end">${precioTotal.toFixed(2)}</td>
+        <td>
+            <button class="btn btn-danger btn-sm" onclick="eliminarProducto(this)">
+                <i class="fas fa-trash me-1"></i>Eliminar
+            </button>
+        </td>
+    `;
+
+    actualizarTotales();
+    
+    // Cerrar el modal después de agregar
+    const modal = bootstrap.Modal.getInstance(document.getElementById('modalProductos'));
+    modal.hide();
+}
 
 // Función para guardar productos en localStorage
 function guardarEnLocalStorage(productos) {
@@ -355,7 +653,7 @@ function cargarProductosGuardados() {
             <td class="text-end">${producto.precioTotal}</td>
             <td>
                 <button class="btn btn-danger btn-sm" onclick="eliminarProducto(this)">
-                    <i class="fas fa-trash"></i>
+                    <i class="fas fa-trash me-1"></i>Eliminar
                 </button>
             </td>
         `;
@@ -381,7 +679,8 @@ window.agregarProducto = function(btn) {
     const nombre = fila.cells[1].innerText;
     const stock = parseInt(fila.cells[2].innerText);
     const cantidad = parseInt(fila.querySelector('input[type="number"]').value) || 1;
-    const precioUnitario = parseFloat(fila.cells[4].innerText);
+    const precioTexto = fila.cells[4].innerText.replace('$', '').trim();
+    const precioUnitario = parseFloat(precioTexto);
     const precioTotal = precioUnitario * cantidad;
 
     // Validar si la cantidad supera el stock
@@ -401,7 +700,7 @@ window.agregarProducto = function(btn) {
         <td class="text-end">${precioTotal.toFixed(2)}</td>
         <td>
             <button class="btn btn-danger btn-sm" onclick="eliminarProducto(this)">
-                <i class="fas fa-trash"></i>
+                <i class="fas fa-trash me-1"></i>Eliminar
             </button>
         </td>
     `;
@@ -420,7 +719,303 @@ window.agregarProducto = function(btn) {
 // Cargar productos guardados cuando se carga la página
 document.addEventListener('DOMContentLoaded', function() {
     cargarProductosGuardados();
+    
+    // Función debounce para evitar múltiples llamadas
+    function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+
+    // Configurar el evento de búsqueda con navegación por teclado
+    const inputBusqueda = document.getElementById('busquedaProducto');
+    const resultadosDiv = document.getElementById('resultadosBusqueda');
+    let selectedIndex = -1;
+
+    if (!inputBusqueda) {
+        console.error('No se encontró el elemento busquedaProducto');
+        return;
+    }
+
+    if (!resultadosDiv) {
+        console.error('No se encontró el elemento resultadosBusqueda');
+        return;
+    }
+
+    // Cerrar resultados al hacer clic fuera
+    document.addEventListener('click', function(e) {
+        if (!inputBusqueda.contains(e.target) && !resultadosDiv.contains(e.target)) {
+            resultadosDiv.style.display = 'none';
+        }
+    });
+    
+    const buscarConDebounce = debounce(function(busqueda) {
+        if (busqueda.length >= 2) {
+            buscarProductos(busqueda);
+        } else {
+            resultadosDiv.style.display = 'none';
+        }
+    }, 300);
+
+    inputBusqueda.addEventListener('input', function() {
+        const busqueda = this.value.toLowerCase();
+        selectedIndex = -1;
+        buscarConDebounce(busqueda);
+    });
+
+    // Manejar navegación con teclado
+    inputBusqueda.addEventListener('keydown', function(e) {
+        const resultadosDiv = document.getElementById('resultadosBusqueda');
+        const items = resultadosDiv.getElementsByClassName('list-group-item');
+        
+        if (items.length === 0) return;
+
+        switch(e.key) {
+            case 'ArrowDown':
+                e.preventDefault();
+                selectedIndex = Math.min(selectedIndex + 1, items.length - 1);
+                updateSelection(items);
+                ensureVisible(items[selectedIndex]);
+                break;
+            case 'ArrowUp':
+                e.preventDefault();
+                selectedIndex = Math.max(selectedIndex - 1, 0);
+                updateSelection(items);
+                ensureVisible(items[selectedIndex]);
+                break;
+            case 'Enter':
+                e.preventDefault();
+                if (selectedIndex >= 0 && selectedIndex < items.length) {
+                    items[selectedIndex].click();
+                }
+                break;
+            case 'Escape':
+                resultadosDiv.style.display = 'none';
+                inputBusqueda.blur();
+                break;
+        }
+    });
 });
+
+// Función para resaltar el texto coincidente
+function highlightText(text, termino) {
+    if (!termino) return text;
+    const regex = new RegExp(`(${termino})`, 'gi');
+    return text.replace(regex, '<mark>$1</mark>');
+}
+
+// Función para buscar productos
+function buscarProductos(termino) {
+    // Construir la URL con el parámetro de búsqueda
+    const url = new URL('{% url "Inventario:buscar_productos_venta" %}', window.location.origin);
+    url.searchParams.append('q', termino);
+    
+    fetch(url, {
+        method: 'GET',
+        headers: {
+            'Accept': 'application/json'
+        }
+    })
+    .then(response => {
+        return response.json();
+    })
+    .then(data => {
+        const resultadosDiv = document.getElementById('resultadosBusqueda');
+        
+        if (!resultadosDiv) {
+            console.error('No se encontró el elemento resultadosBusqueda');
+            return;
+        }
+        
+        const listaResultados = resultadosDiv.querySelector('.list-group');
+        
+        if (!listaResultados) {
+            console.error('No se encontró el elemento .list-group dentro de resultadosBusqueda');
+            return;
+        }
+        
+        listaResultados.innerHTML = '';
+        
+        if (data.status === 'error') {
+            console.error('Error en la búsqueda:', data.mensaje);
+        }
+
+        if (data.productos && data.productos.length > 0) {
+            data.productos.forEach(producto => {
+                const item = document.createElement('a');
+                item.href = '#';
+                
+                const isInactivo = producto.estado === 'Inactivo';
+                
+                // Agregar el evento click dependiendo del estado del producto
+                if (isInactivo) {
+                    item.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        // Mostrar mensaje de error con Bootstrap Toast
+                        const toast = new bootstrap.Toast(document.getElementById('errorToast'));
+                        document.getElementById('errorToastBody').textContent = 'Este producto no está disponible para la venta porque se encuentra inactivo.';
+                        toast.show();
+                    });
+                } else {
+                    item.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        agregarProductoDesdeBusqueda(producto);
+                        resultadosDiv.style.display = 'none';
+                        document.getElementById('busquedaProducto').value = '';
+                    });
+                }
+                item.className = `list-group-item list-group-item-action producto-item ${isInactivo ? 'disabled' : ''}`;
+                if (isInactivo) {
+                    item.style.cursor = 'not-allowed';
+                    item.title = 'Producto inactivo - No disponible para venta';
+                }
+                
+                item.innerHTML = `
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="producto-imagen position-relative">
+                            <img src="${producto.imagen || '/static/img/no-image.png'}" 
+                                 alt="${producto.nombre || 'Producto'}" 
+                                 class="img-thumbnail shadow-sm ${isInactivo ? 'opacity-50' : ''}" 
+                                 style="width: 45px; height: 45px; object-fit: cover; border-radius: 6px;"
+                                 onerror="this.src='/static/img/no-image.png'">
+                            ${isInactivo ? '<div class="position-absolute top-0 end-0 badge bg-danger rounded-circle" style="transform: translate(25%, -25%)"><i class="fas fa-ban" style="font-size: 10px"></i></div>' : ''}
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <div class="fw-bold mb-0">
+                                        ${highlightText(producto.nombre || 'Sin nombre', termino)}
+                                        ${isInactivo ? '<span class="badge bg-danger ms-2" style="font-size: 10px;">Inactivo</span>' : ''}
+                                    </div>
+                                    <div class="text-muted small">
+                                        <span class="me-2">${highlightText(producto.codigo || 'N/A', termino)}</span>
+                                        <span class="text-primary">${producto.fabricante || 'Sin fabricante'}</span>
+                                    </div>
+                                </div>
+                                <div class="text-end">
+                                    <span class="badge bg-primary">$${producto.precio || '0.00'}</span>
+                                    <div class="small ${(producto.stock || 0) > 0 ? 'text-success' : 'text-danger'}">
+                                        Stock: ${producto.stock || 0}
+                                    </div>
+                                </div>
+                            </div>
+                            ${(producto.descripcion && producto.descripcion.trim()) ? `
+                                <div class="small text-muted text-truncate">
+                                    ${highlightText(producto.descripcion, termino)}
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+                
+                // La funcionalidad de click ya está manejada arriba
+                
+                resultadosDiv.style.display = 'block';
+                resultadosDiv.style.visibility = 'visible';
+                resultadosDiv.style.opacity = '1';
+                listaResultados.appendChild(item);
+            });
+            
+            resultadosDiv.style.display = 'block';
+            selectedIndex = -1;
+        } else {
+            listaResultados.innerHTML = `
+                <div class="list-group-item text-muted">
+                    <i class="fas fa-info-circle"></i> No se encontraron productos
+                </div>
+            `;
+            resultadosDiv.style.display = 'block';
+        }
+    })
+    .catch(error => {
+        console.error('Error en la búsqueda:', error);
+    });
+}
+
+// Función para agregar producto desde la búsqueda
+function agregarProductoDesdeBusqueda(producto) {
+    // Verificar que el producto tenga stock
+    if (producto.stock <= 0) {
+        alert('Este producto no tiene stock disponible');
+        return;
+    }
+
+    // Verificar si el producto ya está en la tabla
+    const tablaDetalle = document.querySelector('#detalleFactura tbody');
+    const filasExistentes = tablaDetalle.querySelectorAll('tr');
+    
+    for (let fila of filasExistentes) {
+        if (fila.cells[0].textContent === producto.codigo) {
+            // Si ya existe, incrementar la cantidad
+            const cantidadActual = parseInt(fila.cells[1].textContent);
+            const nuevaCantidad = cantidadActual + 1;
+            
+            if (nuevaCantidad > producto.stock) {
+                alert('No hay suficiente stock. Stock disponible: ' + producto.stock);
+                return;
+            }
+            
+            fila.cells[1].textContent = nuevaCantidad;
+            const precioUnitario = parseFloat(fila.cells[3].textContent);
+            const nuevoTotal = nuevaCantidad * precioUnitario;
+            fila.cells[4].textContent = nuevoTotal.toFixed(2);
+            
+            actualizarTotales();
+            return;
+        }
+    }
+
+    // Si no existe, agregar nueva fila
+    const nuevaFila = tablaDetalle.insertRow();
+    const precioUnitario = parseFloat(producto.precio);
+    const cantidad = 1;
+    const precioTotal = precioUnitario * cantidad;
+
+    nuevaFila.innerHTML = `
+        <td>${producto.codigo}</td>
+        <td>${cantidad}</td>
+        <td>${producto.nombre}</td>
+        <td class="text-end">${precioUnitario.toFixed(2)}</td>
+        <td class="text-end">${precioTotal.toFixed(2)}</td>
+        <td>
+            <button class="btn btn-danger btn-sm" onclick="eliminarProducto(this)">
+                <i class="fas fa-trash me-1"></i>Eliminar
+            </button>
+        </td>
+    `;
+
+    actualizarTotales();
+}
+
+// Función para actualizar la selección visual
+function updateSelection(items) {
+    Array.from(items).forEach((item, index) => {
+        if (index === selectedIndex) {
+            item.classList.add('active');
+        } else {
+            item.classList.remove('active');
+        }
+    });
+}
+
+// Función para asegurar que el elemento seleccionado esté visible
+function ensureVisible(element) {
+    const parent = element.parentElement;
+    const elementRect = element.getBoundingClientRect();
+    const parentRect = parent.getBoundingClientRect();
+    
+    if (elementRect.bottom > parentRect.bottom) {
+        parent.scrollTop += elementRect.bottom - parentRect.bottom;
+    } else if (elementRect.top < parentRect.top) {
+        parent.scrollTop -= parentRect.top - elementRect.top;
+    }
+}
 
 function actualizarTotales() {
     const filas = document.querySelectorAll('#detalleFactura tbody tr');
@@ -466,6 +1061,74 @@ function getCookie(name) {
     return cookieValue;
 }
 
+// Función para guardar nuevo cliente
+function guardarNuevoCliente() {
+    const nombre = document.getElementById('nombreCliente').value.trim();
+    const rut = document.getElementById('rutCliente').value.trim();
+    const telefono = document.getElementById('telefonoCliente').value.trim();
+    const email = document.getElementById('emailCliente').value.trim();
+    const direccion = document.getElementById('direccionCliente').value.trim();
+    const tipo = document.getElementById('tipoCliente').value;
+    
+    // Validación básica
+    if (!nombre) {
+        alert('El nombre del cliente es obligatorio');
+        document.getElementById('nombreCliente').focus();
+        return;
+    }
+    
+    // Preparar datos para enviar
+    const clienteData = {
+        nombre: nombre,
+        rut_nit: rut,
+        telefono: telefono,
+        email: email,
+        direccion: direccion,
+        tipo: tipo
+    };
+    
+    // Obtener token CSRF
+    const csrftoken = getCookie('csrftoken');
+    
+    // Enviar al servidor
+    fetch('{% url "Inventario:crear_cliente" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrftoken
+        },
+        body: JSON.stringify(clienteData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            // Agregar el nuevo cliente al select
+            const clienteSelect = document.getElementById('cliente');
+            const optgroup = clienteSelect.querySelector('optgroup');
+            const newOption = new Option(data.cliente.nombre, data.cliente.id);
+            optgroup.appendChild(newOption);
+            
+            // Seleccionar el nuevo cliente
+            clienteSelect.value = data.cliente.id;
+            
+            // Cerrar el modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('modalNuevoCliente'));
+            modal.hide();
+            
+            // Limpiar el formulario
+            document.getElementById('formNuevoCliente').reset();
+            
+            alert('Cliente creado exitosamente');
+        } else {
+            alert('Error al crear el cliente: ' + data.mensaje);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error al procesar la solicitud. Por favor, inténtelo de nuevo.');
+    });
+}
+
 function guardarVenta() {
     // Obtener el token CSRF
     const csrftoken = getCookie('csrftoken');
@@ -474,10 +1137,6 @@ function guardarVenta() {
     const numeroFactura = document.getElementById('numero_factura').value;
     const clienteSelect = document.querySelector('select[name="cliente"]');
     const clienteId = clienteSelect.value;
-
-    // Debug - Imprimir valores
-    console.log('Número Factura:', numeroFactura);
-    console.log('Cliente ID:', clienteId);
 
     // Validaciones
     if (!numeroFactura) {
@@ -507,7 +1166,6 @@ function guardarVenta() {
             precio_unitario: parseFloat(fila.cells[3].innerText),
             precio_total: parseFloat(fila.cells[4].innerText)
         };
-        console.log('Detalle:', detalle);  // Debug
         detalles.push(detalle);
     });
 
@@ -520,11 +1178,8 @@ function guardarVenta() {
         detalles: detalles
     };
 
-    // Debug - Imprimir datos completos
-    console.log('Datos a enviar:', ventaData);
-
     // Enviar al servidor con la URL correcta
-    fetch('/guardar_venta/', {
+    fetch('{% url "Inventario:guardar_venta" %}', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -534,14 +1189,13 @@ function guardarVenta() {
     })
     .then(response => response.json())
     .then(data => {
-        console.log('Respuesta:', data);
         if (data.status === 'success') {
             // Abrir el PDF en una nueva ventana
-            window.open(`/ver_pdf/${data.id}/`, '_blank');
+            window.open(`{% url "Inventario:ver_pdf" venta_id=123 %}`.replace('123', data.venta_id), '_blank');
             // Redirigir a la página de facturas en la ventana actual
-            window.location.href = '/admin_facturas/';
+            window.location.href = '{% url "Inventario:admin_facturas" %}';
         } else {
-            alert('Error al guardar la venta: ' + data.message);
+            alert('Error al guardar la venta: ' + data.mensaje);
         }
     })
     .catch(error => {
@@ -550,4 +1204,21 @@ function guardarVenta() {
     });
 }
 </script>
+
+<!-- Toast para errores -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+    <div id="errorToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header">
+            <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+            <strong class="me-auto">Error</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body" id="errorToastBody">
+            <!-- El mensaje se añadirá dinámicamente -->
+        </div>
+    </div>
+</div>
+
+<!-- Scripts específicos para la búsqueda de clientes -->
+<script src="{% static 'Inventario/js/busqueda_clientes.js' %}"></script>
 {% endblock %}
