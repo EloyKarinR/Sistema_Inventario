@@ -124,34 +124,57 @@ class Command(BaseCommand):
         """Crear clientes de ejemplo"""
         clientes_ejemplo = [
             {
+                'tipo': 'Juridico',
                 'nombre': 'TechCorp Solutions',
-                'rut_nit': '900123456-7',
-                'telefono': '+57 1 234 5678',
-                'email': 'contacto@techcorp.com',
-                'direccion': 'Av. Empresarial 123, Bogotá',
-                'tipo': 'Juridico'
+                'numero_impuesto': '900123456-7',
+                'sitio_web': 'https://www.techcorp.com',
+                'telefono_empresa': '+57 1 234 5678',
+                'nombres': 'Carlos',
+                'apellidos': 'Rodríguez',
+                'correo_electronico': 'contacto@techcorp.com',
+                'telefono_contacto': '+57 300 123 4567',
+                'calle': 'Av. Empresarial 123',
+                'ciudad': 'Bogotá',
+                'region_provincia': 'Cundinamarca',
+                'codigo_postal': '110111',
+                'pais': 'Colombia'
             },
             {
+                'tipo': 'Natural',
                 'nombre': 'María González',
-                'rut_nit': '12345678-9',
-                'telefono': '+57 300 987 6543',
-                'email': 'maria.gonzalez@email.com',
-                'direccion': 'Calle 45 #12-34, Medellín',
-                'tipo': 'Natural'
+                'numero_impuesto': '12345678-9',
+                'telefono_empresa': '+57 300 987 6543',
+                'nombres': 'María',
+                'apellidos': 'González',
+                'correo_electronico': 'maria.gonzalez@email.com',
+                'telefono_contacto': '+57 300 987 6543',
+                'calle': 'Calle 45 #12-34',
+                'ciudad': 'Medellín',
+                'region_provincia': 'Antioquia',
+                'codigo_postal': '050001',
+                'pais': 'Colombia'
             },
             {
+                'tipo': 'Juridico',
                 'nombre': 'Innovate LLC',
-                'rut_nit': '800987654-3',
-                'telefono': '+57 2 876 5432',
-                'email': 'ventas@innovate.com',
-                'direccion': 'Carrera 15 #89-12, Cali',
-                'tipo': 'Juridico'
+                'numero_impuesto': '800987654-3',
+                'sitio_web': 'https://www.innovate.com',
+                'telefono_empresa': '+57 2 876 5432',
+                'nombres': 'Ana',
+                'apellidos': 'Martínez',
+                'correo_electronico': 'ventas@innovate.com',
+                'telefono_contacto': '+57 310 876 5432',
+                'calle': 'Carrera 15 #89-12',
+                'ciudad': 'Cali',
+                'region_provincia': 'Valle del Cauca',
+                'codigo_postal': '760001',
+                'pais': 'Colombia'
             }
         ]
         
         for cliente_data in clientes_ejemplo:
             cliente, created = Cliente.objects.get_or_create(
-                rut_nit=cliente_data['rut_nit'],
+                numero_impuesto=cliente_data['numero_impuesto'],
                 defaults=cliente_data
             )
             if created:
