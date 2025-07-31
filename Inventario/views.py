@@ -11,6 +11,7 @@ from .models import Proveedor
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 import json
+import traceback
 from Inventario.models import HistorialCompras
 from django.views.decorators.csrf import csrf_exempt  # Temporal para pruebas
 from django.db.models import Max
@@ -19,40 +20,112 @@ from .models import Cliente
 from django.utils import timezone
 import re
 from django.db.models import Q
-from .models import NuevaVenta
-import traceback  # Agregamos esto para ver el error completo
-from .models import Venta, DetalleVenta, Producto
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def buscar_productos_venta(request):
+    try:
+        # Obtener término de búsqueda dependiendo del método
+        if request.method == 'POST':
+            data = json.loads(request.body)
+            termino = data.get('termino', '').strip()
+        else:  # GET
+            termino = request.GET.get('q', '').strip()
+        
+        if len(termino) < 2:
+            return JsonResponse({'productos': [], 'mensaje': 'Término muy corto'})
+        
+        print(f"Construyendo consulta de búsqueda para término: '{termino}'")
+        
+        # Búsqueda más flexible sin distinguir mayúsculas/minúsculas
+        query = Q(nombre__icontains=termino) | Q(codigo__icontains=termino) | Q(descripcion__icontains=termino)
+        
+        # Buscar todos los productos que coincidan con el término
+        productos = Producto.objects.filter(query)
+        print(f"Productos encontrados para '{termino}': {productos.count()}")
+        
+        # Debug paso a paso
+        print("=== DEBUG PASO A PASO ===")
+        
+        try:
+            print("Paso 1: Intentando obtener primer producto...")
+            primer_producto = productos.first()
+            print(f"Primer producto obtenido: {primer_producto}")
+            
+            if primer_producto:
+                print(f"Paso 2: Accediendo a atributos del producto...")
+                print(f"ID: {primer_producto.id}")
+                print(f"Nombre: {primer_producto.nombre}")
+                print(f"Código: {primer_producto.codigo}")
+                print(f"Precio: {primer_producto.precio}")
+                print(f"Stock: {primer_producto.stock}")
+                print(f"Fabricante: {primer_producto.fabricante}")
+                
+                # Intentar crear el diccionario del producto
+                print("Paso 3: Creando diccionario del producto...")
+                producto_dict = {
+                    'id': primer_producto.id,
+                    'nombre': primer_producto.nombre,
+                    'codigo': primer_producto.codigo,
+                    'precio': str(primer_producto.precio),
+                    'stock': primer_producto.stock,
+                    'descripcion': primer_producto.descripcion or '',
+                    'imagen': primer_producto.imagen.url if primer_producto.imagen else None,
+                    'fabricante': primer_producto.fabricante
+                }
+                print("Paso 4: Diccionario creado exitosamente!")
+                print(f"Diccionario: {producto_dict}")
+                
+                productos_lista = [producto_dict]
+            else:
+                print("No se encontró ningún producto")
+                productos_lista = []
+                
+        except Exception as e:
+            print(f"ERROR en debug paso a paso: {e}")
+            print(f"Traceback completo: {traceback.format_exc()}")
+            productos_lista = []
+        
+        print(f"Total productos procesados: {len(productos_lista)}")
+        
+        response_data = {
+            'productos': productos_lista,
+            'status': 'success',
+            'total_productos': len(productos_lista),
+            'termino_busqueda': termino,
+            'mensaje': f'Se encontraron {len(productos_lista)} productos para el término "{termino}"'
+        }
+        print(f"Enviando respuesta con {len(productos_lista)} productos")
+        return JsonResponse(response_data)
+        
+    except Exception as e:
+        print(f"Error en búsqueda de productos: {str(e)}")
+        return JsonResponse({
+            'productos': [],
+            'status': 'error',
+            'mensaje': str(e)
+        })
+
+# Importaciones adicionales necesarias
+from .models import NuevaVenta, Venta, DetalleVenta, PerfilEmpresa, Profile
 from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.http import require_POST
-from .models import PerfilEmpresa
 import pytz
+import os
+import io
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
 from reportlab.lib import colors
-from django.http import HttpResponse
-import os
+from django.http import HttpResponse, FileResponse
 from django.conf import settings
 from reportlab.lib.units import inch
-from django.db.models import Q, Sum, F
-from django.http import FileResponse
-from reportlab.pdfgen import canvas
-from reportlab.lib import colors
-from reportlab.lib.pagesizes import letter
+from django.db.models import Q, Sum, F, Count
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Image, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet
-from reportlab.lib.units import inch
-from datetime import datetime
-import io
 from django.core.exceptions import ValidationError
 from django.contrib.auth import authenticate, login, logout
-from django.db import transaction  # Agregar al inicio del archivo
+from django.db import transaction
 from .forms import ProfileForm
-from .models import Profile
-
-
-
-
-
 
 
 def index(request):
@@ -198,47 +271,83 @@ def nuevo_producto(request):
 
 def editar_producto(request, producto_id):
     producto = get_object_or_404(Producto, id=producto_id)
-
+    fabricantes = Fabricante.objects.all()
     
+    print("Valores del producto:")
+    print(f"Costo original: {producto.costo}")
+    print(f"Precio original: {producto.precio}")
+    
+    # Convertir los valores a float para la presentación
+    try:
+        costo = float(producto.costo) if producto.costo is not None else 0.00
+        precio = float(producto.precio) if producto.precio is not None else 0.00
+        
+        # Asegurarse de que el precio no sea menor que el costo
+        if precio < costo:
+            precio = costo
+            # Actualizar el precio en la base de datos
+            producto.precio = Decimal(str(costo))
+            producto.save()
+            messages.warning(request, 'El precio de venta ha sido ajustado al costo para evitar pérdidas.')
+            
+    except (TypeError, ValueError):
+        print("Error al convertir valores decimales")
+        costo = 0.00
+        precio = 0.00
+    
+    print(f"Costo procesado: {costo}")
+    print(f"Precio procesado: {precio}")
+    
+    # Calcular la utilidad
+    utilidad = precio - costo
+    print(f"Utilidad calculada: {utilidad}")
     
     if request.method == 'POST':
         try:
-            # Limpiamos y convertimos los valores monetarios
-            costo = request.POST.get('costo', '0')
-            precio = request.POST.get('precio', '0')
-            
-            # Removemos el símbolo $ y espacios si existen
-            #costo = costo.replace('$', '').strip()
-            #precio = precio.replace('$', '').strip()
-            
-            # Actualizamos el producto
+            # Procesar los datos del formulario
             producto.codigo = request.POST['codigo']
             producto.modelo = request.POST['modelo']
             producto.nombre = request.POST['nombre']
             producto.descripcion = request.POST['descripcion']
             producto.fabricante = request.POST['fabricante']
             producto.estado = request.POST['estado']
-            producto.costo = request.POST['costo']
-            producto.precio = request.POST['precio']
-            producto.stock = request.POST['stock']
+            
+            # Convertir valores numéricos
+            try:
+                nuevo_costo = Decimal(request.POST['costo'])
+                nuevo_precio = Decimal(request.POST['precio'])
+                
+                # Validar que el precio no sea menor que el costo
+                if nuevo_precio < nuevo_costo:
+                    nuevo_precio = nuevo_costo
+                    messages.warning(request, 'El precio de venta ha sido ajustado al costo para evitar pérdidas.')
+                
+                producto.costo = nuevo_costo
+                producto.precio = nuevo_precio
+                producto.stock = int(request.POST['stock'])
+            except ValueError:
+                raise ValueError("Por favor, ingrese valores numéricos válidos para costo, precio y stock")
             
             if 'imagen' in request.FILES:
                 producto.imagen = request.FILES['imagen']
             
             producto.save()
             messages.success(request, 'Producto actualizado exitosamente')
-            return redirect('productos_view')
+            return redirect('Inventario:productos')
             
         except Exception as e:
             print(f"Error al actualizar: {str(e)}")
             messages.error(request, f'Error al actualizar el producto: {str(e)}')
-    print("=== DEBUG ===")
-    print(f"Costo Actual: {producto.costo}")
-    print(f"Precio Actual: {producto.precio}")
+    
+    # Preparar el contexto para el formulario
     context = {
         'producto': producto,
-        'fabricantes': Fabricante.objects.all()
+        'fabricantes': fabricantes,
+        'utilidad': "{:.2f}".format(utilidad),
+        'costo': "{:.2f}".format(costo),
+        'precio': "{:.2f}".format(precio)
     }
+    print("Valores enviados al contexto:", context)
     return render(request, 'Inventario/editar_producto.html', context)
 
 def eliminar_producto(request, producto_id):
@@ -731,7 +840,44 @@ def eliminar_proveedor(request, proveedor_id):
 
 def nueva_venta(request):
     productos = Producto.objects.all()
-    clientes = Cliente.objects.all()
+    
+    # Obtener término de búsqueda
+    query = request.GET.get('q', '')
+    
+    # Consulta base excluyendo Cliente Final
+    clientes_base = Cliente.objects.exclude(numero_impuesto="00000000")
+    
+    # Aplicar búsqueda si hay término
+    if query:
+        clientes_base = clientes_base.filter(
+            Q(nombre__icontains=query) |
+            Q(numero_impuesto__icontains=query) |
+            Q(correo_electronico__icontains=query)
+        )
+    
+    # Ordenar por frecuencia de compras y luego por nombre
+    clientes = clientes_base.annotate(
+        num_compras=Count('venta')
+    ).order_by('-num_compras', 'nombre')
+    
+    # Asegurarse de que existe el Cliente Final
+    cliente_final = Cliente.objects.filter(numero_impuesto="00000000").first()
+    if not cliente_final:
+        cliente_final = Cliente.objects.create(
+            numero_impuesto="00000000",
+            nombre="Cliente Final",
+            telefono_empresa="000000000",
+            nombres="Cliente",
+            apellidos="Final",
+            correo_electronico="cliente@final.com",
+            telefono_contacto="000000000",
+            calle="Sin dirección",
+            ciudad="Sin ciudad",
+            region_provincia="Sin región",
+            codigo_postal="00000",
+            pais="Sin país",
+            tipo='persona_natural'
+        )
 
     # Obtener el último número de factura y generar el siguiente
     ultima_venta = Venta.objects.order_by('-numero_factura').first()
@@ -756,6 +902,60 @@ def nueva_venta(request):
     })
 
 @login_required
+@login_required
+@require_POST
+def crear_cliente_rapido(request):
+    try:
+        data = json.loads(request.body)
+        
+        # Validaciones básicas
+        if not data.get('nombre'):
+            return JsonResponse({
+                'status': 'error',
+                'message': 'El nombre es requerido'
+            }, status=400)
+            
+        if not data.get('numero_impuesto'):
+            return JsonResponse({
+                'status': 'error',
+                'message': 'El número de impuesto es requerido'
+            }, status=400)
+            
+        # Crear el cliente con datos mínimos
+        cliente = Cliente.objects.create(
+            nombre=data['nombre'],
+            numero_impuesto=data['numero_impuesto'],
+            telefono_empresa=data.get('telefono', '000000000'),
+            correo_electronico=data.get('correo_electronico', ''),
+            nombres=data.get('nombres', ''),
+            apellidos=data.get('apellidos', ''),
+            telefono_contacto=data.get('telefono', '000000000'),
+            calle=data.get('direccion', 'Sin dirección'),
+            ciudad=data.get('ciudad', 'Sin ciudad'),
+            region_provincia=data.get('region', 'Sin región'),
+            codigo_postal='00000',
+            pais=data.get('pais', 'Sin país'),
+            tipo='persona_natural'  # Agregar tipo por defecto
+        )
+        
+        return JsonResponse({
+            'status': 'success',
+            'message': 'Cliente creado exitosamente',
+            'cliente': {
+                'id': cliente.id,
+                'nombre': cliente.nombre,
+                'numero_impuesto': cliente.numero_impuesto,
+                'telefono': cliente.telefono_empresa
+            }
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'status': 'error',
+            'message': str(e)
+        }, status=400)
+
+@login_required
 @require_POST
 @transaction.atomic
 def guardar_venta(request):
@@ -772,20 +972,23 @@ def guardar_venta(request):
         # Manejar el caso de persona natural
         cliente_id = data['cliente']
         if cliente_id == 'persona_natural':
-            # Crear un cliente temporal para persona natural
-            cliente = Cliente.objects.create(
-                nombre="Cliente Final",
+            # Buscar o crear un único Cliente Final
+            cliente, created = Cliente.objects.get_or_create(
                 numero_impuesto="00000000",
-                telefono_empresa="000000000",
-                nombres="Cliente",
-                apellidos="Final",
-                correo_electronico="cliente@final.com",
-                telefono_contacto="000000000",
-                calle="Sin dirección",
-                ciudad="Sin ciudad",
-                region_provincia="Sin región",
-                codigo_postal="00000",
-                pais="Sin país"
+                defaults={
+                    'nombre': "Cliente Final",
+                    'telefono_empresa': "000000000",
+                    'nombres': "Cliente",
+                    'apellidos': "Final",
+                    'correo_electronico': "cliente@final.com",
+                    'telefono_contacto': "000000000",
+                    'calle': "Sin dirección",
+                    'ciudad': "Sin ciudad",
+                    'region_provincia': "Sin región",
+                    'codigo_postal': "00000",
+                    'pais': "Sin país",
+                    'tipo': 'persona_natural'
+                }
             )
             cliente_id = cliente.id
         
@@ -840,6 +1043,36 @@ def guardar_venta(request):
             'message': str(e)
         })
 
+@require_http_methods(["GET"])
+def buscar_clientes(request):
+    query = request.GET.get('q', '')
+    try:
+        clientes = Cliente.objects.exclude(numero_impuesto="00000000")
+        if query:
+            clientes = clientes.filter(
+                Q(nombre__icontains=query) |
+                Q(numero_impuesto__icontains=query) |
+                Q(correo_electronico__icontains=query)
+            )
+        
+        # Ordenar por frecuencia de compras
+        clientes = clientes.annotate(
+            num_compras=Count('venta')
+        ).order_by('-num_compras', 'nombre')[:10]  # Limitamos a 10 resultados
+        
+        data = [{
+            'id': cliente.id,
+            'nombre': cliente.nombre,
+            'numero_impuesto': cliente.numero_impuesto,
+            'correo': cliente.correo_electronico,
+            'telefono': cliente.telefono_empresa,
+            'num_compras': cliente.num_compras
+        } for cliente in clientes]
+        
+        return JsonResponse({'status': 'success', 'clientes': data})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+
 def obtener_cliente(request, cliente_id):
     try:
         cliente = Cliente.objects.get(id=cliente_id)
@@ -854,51 +1087,6 @@ def obtener_cliente(request, cliente_id):
         return JsonResponse({'status': 'success', 'cliente': data})
     except Cliente.DoesNotExist:
         return JsonResponse({'status': 'error', 'message': 'Cliente no encontrado'})
-
-def buscar_productos_venta(request):
-    print("Vista buscar_productos_venta llamada")  # Debug
-    query = request.GET.get('query', '')
-    print("Iniciando búsqueda de productos...")  # Debug
-    
-    try:
-        # Verificar si hay productos en la base de datos
-        total_productos = Producto.objects.count()
-        print(f"Total de productos en BD: {total_productos}")  # Debug
-        
-        productos = Producto.objects.all()
-        if query:
-            productos = productos.filter(
-                Q(codigo__icontains=query) |
-                Q(nombre__icontains=query)
-            )
-        
-        # Verificar la estructura de los productos
-        print("Campos disponibles en Producto:", [f.name for f in Producto._meta.fields])  # Debug
-        
-        data = []
-        for producto in productos:
-            try:
-                data.append({
-                    'codigo': str(producto.codigo),
-                    'nombre': str(producto.nombre),
-                    'fabricante': str(getattr(producto, 'fabricante', '')),
-                    'stock': int(producto.stock),
-                    'precio_venta': float(producto.precio_venta)
-                })
-            except AttributeError as e:
-                print(f"Error con producto {producto.id}: {str(e)}")  # Debug
-        
-        print(f"Productos procesados: {len(data)}")  # Debug
-        return JsonResponse({'status': 'success', 'productos': data})
-    
-    except Exception as e:
-        error_detallado = traceback.format_exc()
-        print("Error detallado:", error_detallado)  # Debug
-        return JsonResponse({
-            'status': 'error',
-            'message': f'Error al cargar los productos: {str(e)}',
-            'detail': error_detallado
-        })
 
 @csrf_exempt
 @login_required
@@ -1404,6 +1592,45 @@ def editar_perfil(request):
     else:
         form = ProfileForm(instance=profile)
     return render(request, 'Inventario/editar_perfil.html', {'form': form, 'profile': profile})
+
+@login_required
+@require_http_methods(["POST"])
+def crear_cliente(request):
+    try:
+        data = json.loads(request.body)
+        
+        # Crear nuevo cliente con los datos del modal
+        cliente = Cliente.objects.create(
+            nombre=data.get('nombre'),
+            numero_impuesto=data.get('rut_nit', ''),
+            telefono_empresa=data.get('telefono', ''),
+            correo_electronico=data.get('email', ''),
+            tipo=data.get('tipo', 'Natural'),
+            # Campos mínimos requeridos - se pueden completar después
+            nombres=data.get('nombre', ''),  # Usar el nombre como nombres también
+            apellidos='',  # Campo vacío por ahora
+            telefono_contacto=data.get('telefono', ''),
+            calle=data.get('direccion', ''),
+            ciudad='',
+            region_provincia='',
+            codigo_postal='',
+            pais='Paraguay'
+        )
+        
+        return JsonResponse({
+            'status': 'success',
+            'mensaje': 'Cliente creado exitosamente',
+            'cliente': {
+                'id': cliente.id,
+                'nombre': cliente.nombre
+            }
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'status': 'error',
+            'mensaje': str(e)
+        }, status=400)
 
 
 

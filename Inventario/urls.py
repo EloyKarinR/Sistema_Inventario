@@ -1,6 +1,7 @@
 from django.urls import path
 
 from Inventario import views
+from .views_venta import buscar_productos_venta, guardar_venta
 
 app_name = 'Inventario'
 
@@ -18,14 +19,18 @@ urlpatterns = [
     path('fabricantes/crear_fabricante/', views.crear_fabricante, name='crear_fabricante'),
     path('fabricantes/editar/<int:id>/', views.editar_fabricante, name='editar_fabricante'),
     path('fabricantes/borrar/<int:id>/', views.borrar_fabricante, name='borrar_fabricante'),
-
+    
     path('guardar-compra/', views.guardar_compra, name='guardar_compra'),
     path('editar_compra/<int:compra_id>/', views.editar_compra, name='editar_compra'),
     path('actualizar_compra/<int:compra_id>/', views.actualizar_compra, name='actualizar_compra'),
     path('eliminar_compra/<int:compra_id>/', views.eliminar_compra, name='eliminar_compra'),
-
+    
+    # URLs de ventas
+    path('buscar_productos_venta/', buscar_productos_venta, name='buscar_productos_venta'),
+    
     path('clientes/', views.clientes, name='clientes'),
     path('cliente_detalles/<int:cliente_id>/', views.cliente_detalles, name='cliente_detalles'),
+    path('crear_cliente/', views.crear_cliente, name='crear_cliente'),
     #path('nuevo_cliente/', views.nuevo_cliente, name='nuevo_cliente'),
     path('editar_cliente/<int:cliente_id>/', views.editar_cliente, name='editar_cliente'),
     path('eliminar_cliente/<int:cliente_id>/', views.eliminar_cliente, name='eliminar_cliente'),
@@ -40,7 +45,9 @@ urlpatterns = [
     path('nueva_venta/', views.nueva_venta, name='nueva_venta'),
     path('obtener_cliente/<int:cliente_id>/', views.obtener_cliente, name='obtener_cliente'),
     path('buscar_productos_venta/', views.buscar_productos_venta, name='buscar_productos_venta'),
-    path('guardar_venta/', views.guardar_venta, name='guardar_venta'),
+    path('guardar_venta/', guardar_venta, name='guardar_venta'),
+    path('buscar-clientes/', views.buscar_clientes, name='buscar_clientes'),
+    path('crear-cliente-rapido/', views.crear_cliente_rapido, name='crear_cliente_rapido'),
     #path('lista_productos/', views.lista_productos, name='lista_productos'),
 
     path('admin_facturas/', views.admin_facturas, name='admin_facturas'),
