@@ -2,6 +2,28 @@
 
 Sistema web de gestión de inventario desarrollado con Django. Permite administrar productos, ventas, compras, clientes, proveedores y generar reportes.
 
+## Capturas de Pantalla 📸
+
+### Panel de Control
+![Panel de Control](screenshots/panel_control.png)
+*Vista principal del panel de control con estadísticas y resumen de actividades.*
+
+### Gestión de Productos
+![Gestión de Productos](screenshots/productos.png)
+*Interfaz de gestión de productos con lista y detalles.*
+
+### Nueva Venta
+![Nueva Venta](screenshots/nueva_venta.png)
+*Proceso de creación de una nueva venta con selección de productos.*
+
+### Factura PDF
+![Factura PDF](screenshots/factura.png)
+*Ejemplo de factura generada en formato PDF.*
+
+### Reportes y Estadísticas
+![Reportes](screenshots/reportes.png)
+*Visualización de reportes y estadísticas del sistema.*
+
 ## Características 🚀
 
 - Gestión de productos con imágenes y categorías
