@@ -1,0 +1,71 @@
+<!-- Componente de búsqueda de clientes -->
+<div class="card mb-4">
+    <div class="card-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Selección de Cliente</h5>
+            <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#nuevoClienteModal">
+                <i class="fas fa-plus"></i> Nuevo Cliente
+            </button>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="form-group mb-3">
+            <div class="input-group">
+                <input type="text" id="buscarCliente" class="form-control" placeholder="Buscar cliente...">
+                <span class="input-group-text">
+                    <i class="fas fa-search"></i>
+                </span>
+            </div>
+        </div>
+        <div class="list-group" id="resultadosClientes" style="max-height: 200px; overflow-y: auto;">
+            <!-- Los resultados de la búsqueda se mostrarán aquí -->
+        </div>
+        
+        <!-- Información del cliente seleccionado -->
+        <div id="cliente_info" class="mt-3" style="display: none;">
+            <div class="alert alert-info">
+                <strong>Cliente seleccionado:</strong>
+                <div id="cliente_detalles"></div>
+            </div>
+        </div>
+        
+        <!-- Campo oculto para el ID del cliente -->
+        <input type="hidden" id="cliente_id" name="cliente_id" value="">
+    </div>
+</div>
+
+<!-- Modal para nuevo cliente -->
+<div class="modal fade" id="nuevoClienteModal" tabindex="-1" aria-labelledby="nuevoClienteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="nuevoClienteModalLabel">Crear Nuevo Cliente</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formNuevoCliente">
+                    <div class="mb-3">
+                        <label for="nombreCliente" class="form-label">Nombre *</label>
+                        <input type="text" class="form-control" id="nombreCliente" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="numeroImpuesto" class="form-label">Número de Impuesto *</label>
+                        <input type="text" class="form-control" id="numeroImpuesto" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="telefonoCliente" class="form-label">Teléfono</label>
+                        <input type="tel" class="form-control" id="telefonoCliente">
+                    </div>
+                    <div class="mb-3">
+                        <label for="correoCliente" class="form-label">Correo Electrónico</label>
+                        <input type="email" class="form-control" id="correoCliente">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="guardarNuevoCliente">Guardar Cliente</button>
+            </div>
+        </div>
+    </div>
+</div>
