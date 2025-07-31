@@ -50,7 +50,7 @@ from django.db import models
 
 class Producto(models.Model):
     id = models.AutoField(primary_key=True)
-    codigo = models.CharField(max_length=100)
+    codigo = models.CharField(max_length=100, unique=True)
     modelo = models.CharField(max_length=100)
     nombre = models.CharField(max_length=100)
     descripcion = models.TextField(blank=True, null=True)
@@ -97,6 +97,13 @@ class Fabricante(models.Model):
 from django.db import models
 
 class Cliente(models.Model):
+    # Tipo de Cliente
+    TIPO_CHOICES = [
+        ('Natural', 'Persona Natural'),
+        ('Juridico', 'Persona Jurídica')
+    ]
+    tipo = models.CharField(max_length=10, choices=TIPO_CHOICES, default='Natural')
+    
     # Datos de Empresa
     nombre = models.CharField(max_length=200)
     numero_impuesto = models.CharField(max_length=50, blank=True, null=True)
