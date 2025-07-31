@@ -76,6 +76,7 @@ python manage.py migrate
 ```bash
 python manage.py createsuperuser
 ```
+**Importante**: Crea tus propias credenciales únicas. Este será el administrador de TU instalación.
 
 6. Crear carpetas necesarias:
 ```bash
@@ -100,9 +101,11 @@ python manage.py runserver
 ## Uso 💡
 
 1. Acceder a `http://localhost:8000`
-2. Iniciar sesión con las credenciales del superusuario
+2. Iniciar sesión con las credenciales del superusuario que TÚ creaste
 3. Navegar al panel de control
-4. Comenzar a gestionar el inventario
+4. Comenzar a gestionar tu inventario con tus propios datos
+
+**Nota**: Cada instalación es independiente. Tus datos son privados y no se comparten con otros usuarios del sistema.
 
 ## Estructura del Proyecto 📁
 
@@ -119,11 +122,21 @@ SistemaInventario/
 
 ## Seguridad 🔐
 
-- Sistema de autenticación robusto
+### Autenticación y Privacidad
+- **Instalación completamente independiente**: Cada persona/empresa tiene su propio sistema
+- **Sin usuarios preconfigurados**: Cada instalación crea sus propias credenciales con `createsuperuser`
+- **Base de datos local y privada**: Archivo `db.sqlite3` único para cada instalación
+- **Sin conexión entre instalaciones**: Los datos no se comparten entre diferentes usuarios del sistema
+- **Control total**: Cada empresa maneja sus propios usuarios, productos y datos
+
+### Características de Seguridad
+- Sistema de autenticación robusto de Django
 - Protección contra CSRF
 - Sesiones seguras con tiempo de expiración
-- Validaciones en formularios
-- Sanitización de datos
+- Validaciones en formularios y backend
+- Sanitización de datos de entrada
+- Variables de entorno para configuraciones sensibles
+- Archivos críticos protegidos con .gitignore
 
 ## Contribuir 🤝
 
