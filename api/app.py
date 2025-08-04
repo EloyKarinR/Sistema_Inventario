@@ -1,5 +1,5 @@
-def application(environ, start_response):
-    """WSGI application simple para Vercel"""
+def app(environ, start_response):
+    """WSGI app ultra-simple para Vercel"""
     html = """<!DOCTYPE html>
 <html><head><title>✅ Sistema Inventario FUNCIONANDO</title>
 <style>
@@ -27,10 +27,9 @@ h1{font-size:3em;margin-bottom:30px}
 <p>Inventario + Ventas + Reportes + Clientes</p>
 </div>
 <p style="margin-top:40px;opacity:0.8">Sistema Profesional de Inventario | Desplegado en la Nube</p>
-</body></html>""".encode('utf-8')
-    
+</body></html>""".encode()
     start_response('200 OK', [('Content-Type', 'text/html; charset=utf-8')])
     return [html]
 
 # Alias para compatibilidad con Vercel
-app = application
+application = app
