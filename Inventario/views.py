@@ -114,15 +114,21 @@ from django.views.decorators.http import require_POST
 import pytz
 import os
 import io
-from reportlab.pdfgen import canvas
-from reportlab.lib.pagesizes import letter
-from reportlab.lib import colors
+# Imports de PDF opcionales para evitar errores en deployment
+try:
+    from reportlab.pdfgen import canvas
+    from reportlab.lib.pagesizes import letter
+    from reportlab.lib import colors
+    from reportlab.lib.units import inch
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Image, Paragraph, Spacer
+    from reportlab.lib.styles import getSampleStyleSheet
+    PDF_AVAILABLE = True
+except ImportError:
+    PDF_AVAILABLE = False
+    
 from django.http import HttpResponse, FileResponse
 from django.conf import settings
-from reportlab.lib.units import inch
 from django.db.models import Q, Sum, F, Count
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Image, Paragraph, Spacer
-from reportlab.lib.styles import getSampleStyleSheet
 from django.core.exceptions import ValidationError
 from django.contrib.auth import authenticate, login, logout
 from django.db import transaction
