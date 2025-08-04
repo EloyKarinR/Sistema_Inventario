@@ -5,6 +5,20 @@
 *.env.*.local
 local_settings.py
 
+# ARCHIVOS CRÍTICOS DE SEGURIDAD
+backup.json
+*backup*.json
+*.sql
+*.dump
+db.sqlite3
+
+# INFORMACIÓN PRIVADA
+*_PRIVADA.md
+*_private*
+*_PRIVATE*
+*personal*
+*PERSONAL*
+
 # Python
 *.py[cod]
 __pycache__/
