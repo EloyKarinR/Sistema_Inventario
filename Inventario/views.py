@@ -22,6 +22,10 @@ from django.utils import timezone
 import re
 from django.db.models import Q
 
+def welcome_view(request):
+    """Vista de bienvenida para la página principal"""
+    return render(request, 'welcome.html')
+
 @login_required
 @require_http_methods(["GET", "POST"])
 def buscar_productos_venta(request):

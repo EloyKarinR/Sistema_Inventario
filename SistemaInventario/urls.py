@@ -18,9 +18,13 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from Inventario.views import welcome_view
 
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('', welcome_view, name='welcome'),
+    path('accounts/', include('django.contrib.auth.urls')),
+    path('login/', include('django.contrib.auth.urls')),
     path ('', include('Inventario.urls')),
 ]+ static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
