@@ -22,6 +22,17 @@ from django.utils import timezone
 import re
 from django.db.models import Q
 
+def is_vercel_demo():
+    """Helper function to check if running on Vercel"""
+    return 'VERCEL' in os.environ
+
+def add_demo_warning(request, action="modificar"):
+    """Add demo warning message for Vercel users"""
+    if is_vercel_demo():
+        messages.warning(request, f'📋 <strong>Versión Demo:</strong> Esta es una demostración de solo lectura. No se puede {action} información en Vercel. Para probar todas las funcionalidades, descarga y ejecuta el proyecto localmente.')
+        return True
+    return False
+
 def welcome_view(request):
     """Vista de bienvenida para la página principal"""
     return render(request, 'welcome.html')
@@ -229,6 +240,10 @@ def productos_view(request):
 
 def nuevo_producto(request):
     if request.method == 'POST':
+        # Verificar si es demo de Vercel
+        if add_demo_warning(request, "agregar productos"):
+            return redirect('Inventario:productos')
+            
         try:
             # Obtener y validar el fabricante
             fabricante_nombre = request.POST.get('fabricante')
@@ -318,6 +333,9 @@ def editar_producto(request, producto_id):
     print(f"Utilidad calculada: {utilidad}")
     
     if request.method == 'POST':
+        # Verificar si es demo de Vercel
+        if add_demo_warning(request, "editar productos"):
+            return redirect('Inventario:productos')
         try:
             # Procesar los datos del formulario
             producto.codigo = request.POST['codigo']
@@ -366,6 +384,10 @@ def editar_producto(request, producto_id):
     return render(request, 'Inventario/editar_producto.html', context)
 
 def eliminar_producto(request, producto_id):
+    # Verificar si es demo de Vercel
+    if add_demo_warning(request, "eliminar productos"):
+        return redirect('/productos')
+        
     try:
         producto = get_object_or_404(Producto, id=producto_id)
         nombre_producto = producto.nombre  # Guardamos el nombre para el mensaje

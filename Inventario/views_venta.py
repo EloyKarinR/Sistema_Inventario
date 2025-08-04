@@ -3,8 +3,14 @@ from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_http_methods
 from django.db.models import Q
 from django.db import transaction
+from django.contrib import messages
 import json
+import os
 from .models import Producto, Venta, DetalleVenta, Cliente
+
+def is_vercel_demo():
+    """Helper function to check if running on Vercel"""
+    return 'VERCEL' in os.environ
 
 @login_required
 @require_http_methods(["GET", "POST"])
@@ -85,6 +91,13 @@ def buscar_productos_venta(request):
 @login_required
 @require_http_methods(["POST"])
 def guardar_venta(request):
+    # Verificar si es demo de Vercel
+    if is_vercel_demo():
+        return JsonResponse({
+            'status': 'error',
+            'mensaje': '📋 Versión Demo: Esta es una demostración de solo lectura. No se puede registrar ventas en Vercel. Para probar todas las funcionalidades, descarga y ejecuta el proyecto localmente.'
+        })
+        
     try:
         print("Usuario autenticado:", request.user)
         print("Es anónimo:", request.user.is_anonymous)

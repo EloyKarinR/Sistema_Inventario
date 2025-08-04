@@ -1,0 +1,11 @@
+{% if is_demo %}
+<div class="alert alert-warning alert-dismissible fade show" role="alert">
+    <i class="fas fa-exclamation-triangle"></i>
+    <strong>📋 Versión Demo:</strong> Esta es una demostración de solo lectura. No se puede {{ action }} información en Vercel. 
+    Para probar todas las funcionalidades, 
+    <a href="https://github.com/EloyKarinR/Sistema_Inventario" target="_blank" class="alert-link">
+        descarga y ejecuta el proyecto localmente
+    </a>.
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
+{% endif %}
