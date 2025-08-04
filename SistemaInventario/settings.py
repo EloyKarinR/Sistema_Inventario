@@ -129,12 +129,16 @@ USE_TZ = True
 LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/panel_control/'
 LOGOUT_REDIRECT_URL = '/login/'
-STATIC_URL = 'static/'
+
+# Configuración de archivos estáticos
+STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'static'),
     os.path.join(BASE_DIR, 'Inventario/static')
 ]
+
+# Configuración de archivos media
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
@@ -166,10 +170,6 @@ if 'VERCEL' in os.environ:
             'NAME': '/tmp/db_vercel.sqlite3',  # Base de datos temporal
         }
     }
-    
-    # Configuración de archivos estáticos para Vercel
-    STATIC_URL = '/static/'
-    STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
     
     # Configuración optimizada para serverless
     USE_TZ = True
