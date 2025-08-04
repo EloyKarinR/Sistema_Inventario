@@ -4,5 +4,3 @@ asgiref==3.8.1
 sqlparse==0.4.4
 tzdata==2024.1
 pytz==2023.3
-django-admin-interface==0.28.8
-django-colorfield==0.11.0
