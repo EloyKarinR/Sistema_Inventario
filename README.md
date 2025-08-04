@@ -8,18 +8,28 @@ Puedes ver una demostración en línea en: [https://sistema-inventario-xi.vercel
 
 **Nota sobre la demo**: La demo online está limitada (no permite uploads de archivos). Para funcionalidad completa, ejecuta el proyecto localmente siguiendo las instrucciones de instalación.
 
-## 🔄 Arquivos del Repositorio
+## 🌿 Ramas del Repositorio
 
-Este repositorio contiene archivos para diferentes propósitos:
+Este repositorio tiene dos ramas principales:
 
-### 📁 **Desarrollo Local** (Lo que necesitas):
+### 💻 **`main`** (Esta rama - Desarrollo Local):
+- ✅ Solo archivos necesarios para desarrollo local
+- ✅ Setup limpio y rápido
+- ✅ Sin archivos de deployment
+- ✅ Repositorio optimizado para desarrollo
+
+### 🌐 **`vercel-deploy`** (Deployment):
+- ✅ Configuración completa para Vercel
+- ✅ Archivos de deployment incluidos
+- ✅ Optimizaciones para serverless
+- ✅ Lista para conectar con Vercel
+
+## 🔄 Arquivos de Esta Rama (main)
+
+### 📁 **Solo Desarrollo Local**:
 - `manage.py`, `requirements.txt`, `Inventario/`, `SistemaInventario/`
 - `setup-local.bat` / `setup-local.sh` - Scripts de configuración automática
 - `INSTALACION_RAPIDA.md` - Guía de 5 minutos
-
-### 🌐 **Deployment Vercel** (Opcional):
-- `vercel.json`, `api/`, `requirements-vercel.txt`
-- Solo necesarios si vas a desplegar en Vercel
 
 ### 📚 **Documentación**:
 - `README.md`, `DEPENDENCIAS.md` - Información del proyecto
@@ -64,9 +74,9 @@ Este repositorio contiene archivos para diferentes propósitos:
 - Navegador web moderno
 - Git (para clonar el repositorio)
 
-## Instalación Local Completa 🔧
+## Instalación Local 🔧
 
-### 🚀 **Método Rápido (Recomendado)**:
+### 🚀 **Instalación Automática (Recomendada)**:
 
 #### Windows:
 ```bash
@@ -83,26 +93,7 @@ chmod +x setup-local.sh
 ./setup-local.sh
 ```
 
-### 🧹 **Instalación Solo Desarrollo Local**:
-
-Si prefieres eliminar archivos específicos de Vercel:
-
-#### Windows:
-```bash
-git clone https://github.com/EloyKarinR/Sistema_Inventario.git
-cd Sistema_Inventario
-install-clean.bat
-setup-local.bat
-```
-
-#### Linux/Mac:
-```bash
-git clone https://github.com/EloyKarinR/Sistema_Inventario.git
-cd Sistema_Inventario
-chmod +x install-clean.sh setup-local.sh
-./install-clean.sh
-./setup-local.sh
-```
+*Esta rama (`main`) contiene solo archivos para desarrollo local - sin archivos de deployment innecesarios.*
 
 ### 📝 **Método Manual**:
 

@@ -1,8 +1,15 @@
 # 📋 Guía de Archivos del Proyecto
 
-## 🎯 **¿Qué Necesito para Desarrollo Local?**
+## � **Estrategia de Ramas**
 
-### ✅ **Archivos Esenciales**:
+Este repositorio usa **ramas separadas** para diferentes propósitos:
+
+### 💻 **Rama `main` (Esta rama)**
+**Solo desarrollo local - Sin archivos de deployment**
+
+## 🎯 **¿Qué Contiene Esta Rama?**
+
+### ✅ **Archivos Esenciales para Desarrollo Local**:
 ```
 Sistema_Inventario/
 ├── manage.py                 # ⚡ Script principal de Django
@@ -20,76 +27,77 @@ Sistema_Inventario/
 - `setup-local.bat` / `setup-local.sh` - Instalación automática
 - `INSTALACION_RAPIDA.md` - Guía paso a paso
 
+### 📚 **Documentación**:
+- `README.md` - Guía principal
+- `DEPENDENCIAS.md` - Estrategia de dependencias  
+- `ESTRATEGIA_RAMAS.md` - Explicación de ramas
+- `ARCHIVOS_DEL_PROYECTO.md` - Este archivo
+
 ---
 
-## 🌐 **Archivos Específicos de Vercel** (Puedes ignorar):
+## 🌐 **¿Qué NO Contiene Esta Rama?**
 
-### ⚠️ **Solo para Deployment**:
+### ❌ **Archivos de Vercel** (Están en rama `vercel-deploy`):
 ```
 ├── vercel.json              # 🔧 Configuración de Vercel
 ├── requirements-vercel.txt  # 📦 Dependencias optimizadas para Vercel
 ├── .vercel/                 # 📁 Cache de Vercel
 ├── .vercelignore           # 🚫 Archivos ignorados en Vercel
 ├── api/                    # 🌍 Adaptador para serverless
-│   ├── index.py            # 🎯 Punto de entrada para Vercel
-│   └── requirements.txt    # 📦 Dependencias específicas de API
 ├── Procfile                # 🚀 Para despliegues en Heroku/similar
 ├── runtime.txt             # 🐍 Versión específica de Python
 └── Aptfile                 # 📋 Paquetes del sistema para deployments
 ```
 
-### 🎭 **Templates de Demo**:
-- `Inventario/templates/Inventario/bienvenida_vercel.html` - Página específica de demo
-
 ---
 
-## 🎯 **¿Qué Clono Entonces?**
+## 🎯 **¿Cómo Usar Esta Rama?**
 
 ### Para **Desarrollo Local**:
 ```bash
 git clone https://github.com/EloyKarinR/Sistema_Inventario.git
 cd Sistema_Inventario
 
-# Solo necesitas estos comandos:
+# Instalación automática
 setup-local.bat  # Windows
-# O
 ./setup-local.sh  # Linux/Mac
 ```
 
-**Los archivos de Vercel no interfieren** con tu desarrollo local, simplemente los ignoras.
-
 ### Para **Deployment en Vercel**:
-Clona todo el repositorio y conecta directamente con Vercel - los archivos de configuración ya están listos.
-
----
-
-## 🧹 **¿Quieres un Repositorio "Limpio"?**
-
-Si prefieres un repositorio solo con archivos de desarrollo local:
-
-### Opción 1: Eliminar archivos de Vercel después de clonar
 ```bash
-git clone https://github.com/EloyKarinR/Sistema_Inventario.git
-cd Sistema_Inventario
-
-# Eliminar archivos de Vercel (opcional)
-rm -rf api/ vercel.json requirements-vercel.txt .vercelignore
-rm Procfile runtime.txt Aptfile
+# Cambiar a rama de deployment
+git clone -b vercel-deploy https://github.com/EloyKarinR/Sistema_Inventario.git
 ```
 
-### Opción 2: Fork y personalizar
-1. Haz fork del repositorio
-2. Elimina los archivos de Vercel que no necesites
-3. Mantén solo lo esencial para tu desarrollo
+O conectar Vercel directamente a la rama `vercel-deploy`.
 
 ---
 
-## 💡 **Recomendación**
+## 💡 **Beneficios de Esta Estrategia**
 
-**Deja todos los archivos** - no estorban y permiten:
-- ✅ Desarrollo local completo
-- ✅ Opción de deployment futuro en Vercel
-- ✅ Documentación completa
-- ✅ Scripts de ayuda incluidos
+### ✅ **Para Desarrolladores**:
+- **Repositorio limpio**: Solo archivos necesarios
+- **Setup más rápido**: Sin archivos de deployment innecesarios  
+- **Menor confusión**: Enfoque claro en desarrollo local
+- **Clonación más rápida**: Menos archivos
 
-Los archivos de Vercel ocupan menos de 1MB y no afectan el funcionamiento local.
+### ✅ **Para el Proyecto**:
+- **Separación clara**: Development vs Production
+- **Mantenimiento fácil**: Cada rama tiene propósito específico
+- **Escalabilidad**: Fácil añadir nuevas ramas para otros deployments
+
+---
+
+## � **Cambios entre Ramas**
+
+Para ver archivos de deployment:
+```bash
+git checkout vercel-deploy
+```
+
+Para regresar a desarrollo local:
+```bash
+git checkout main
+```
+
+**Esta estrategia asegura que obtengas exactamente lo que necesitas para tu propósito específico.** 🎯
