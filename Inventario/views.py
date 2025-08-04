@@ -1601,9 +1601,20 @@ def editar_perfil(request):
     if request.method == 'POST':
         form = ProfileForm(request.POST, request.FILES, instance=profile)
         if form.is_valid():
-            form.save()
-            messages.success(request, '¡Perfil actualizado correctamente!')
-            return redirect('Inventario:panel_control')
+            try:
+                # En Vercel, verificar si estamos en producción
+                if 'VERCEL' in os.environ:
+                    # No permitir subida de archivos en Vercel
+                    messages.warning(request, 'La subida de imágenes no está disponible en la versión demo de Vercel. Usa la versión local para esta funcionalidad.')
+                    return redirect('Inventario:panel_control')
+                else:
+                    # Solo guardar en desarrollo local
+                    form.save()
+                    messages.success(request, '¡Perfil actualizado correctamente!')
+                    return redirect('Inventario:panel_control')
+            except Exception as e:
+                messages.error(request, f'Error al guardar la imagen: {str(e)}')
+                return redirect('Inventario:panel_control')
     else:
         form = ProfileForm(instance=profile)
     return render(request, 'Inventario/editar_perfil.html', {'form': form, 'profile': profile})

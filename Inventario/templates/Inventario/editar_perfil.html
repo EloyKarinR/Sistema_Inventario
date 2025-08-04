@@ -8,6 +8,15 @@
             <h5 class="mb-0">Editar Perfil</h5>
         </div>
         <div class="card-body">
+            <!-- Advertencia para Vercel -->
+            {% if 'vercel' in request.get_host %}
+            <div class="alert alert-warning" role="alert">
+                <i class="fas fa-exclamation-triangle"></i>
+                <strong>Versión Demo:</strong> La subida de imágenes no está disponible en Vercel. 
+                Para probar esta funcionalidad, usa la versión local del proyecto.
+            </div>
+            {% endif %}
+            
             <div class="text-center mb-4">
                 {% if profile.image and profile.image.url %}
                     <img src="{{ profile.image.url }}" class="rounded-circle" width="120" height="120" style="object-fit:cover; border: 3px solid #198754;">
@@ -24,7 +33,9 @@
                         <div class="text-danger small">{{ form.image.errors }}</div>
                     {% endif %}
                 </div>
-                <button type="submit" class="btn btn-success w-100">Guardar Cambios</button>
+                <button type="submit" class="btn btn-success w-100" {% if 'vercel' in request.get_host %}disabled title="No disponible en versión demo"{% endif %}>
+                    Guardar Cambios
+                </button>
             </form>
         </div>
     </div>
