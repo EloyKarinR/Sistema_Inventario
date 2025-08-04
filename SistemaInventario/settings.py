@@ -168,5 +168,39 @@ if 'VERCEL' in os.environ:
     STATIC_URL = '/static/'
     STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
     
+    # Configuración optimizada para serverless
+    USE_TZ = True
+    TIME_ZONE = 'UTC'
+    
+    # Desactivar algunas funcionalidades problemáticas en serverless
+    SESSION_COOKIE_SECURE = False  # HTTP en desarrollo
+    CSRF_COOKIE_SECURE = False    # HTTP en desarrollo
+    
+    # Cache simple para mejor rendimiento
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+            'LOCATION': 'vercel-cache',
+        }
+    }
+    
+    # Configuración de logging para debugging
+    LOGGING = {
+        'version': 1,
+        'disable_existing_loggers': False,
+        'handlers': {
+            'console': {
+                'level': 'INFO',
+                'class': 'logging.StreamHandler',
+            },
+        },
+        'loggers': {
+            'django': {
+                'handlers': ['console'],
+                'level': 'INFO',
+            },
+        },
+    }
+    
     # Para demo en Vercel - permitir migraciones
     # En producción real usar PostgreSQL con Vercel Postgres
