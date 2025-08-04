@@ -37,6 +37,8 @@ else:
 # Application definition
 
 INSTALLED_APPS = [
+    'admin_interface',
+    'colorfield',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -150,6 +152,9 @@ SESSION_SAVE_EVERY_REQUEST = True
 SESSION_COOKIE_SECURE = True  # Solo enviar cookie por HTTPS
 SESSION_COOKIE_HTTPONLY = True  # No permitir acceso a la cookie via JavaScript
 SESSION_COOKIE_SAMESITE = 'Strict'  # Protección contra CSRF
+
+X_FRAME_OPTIONS = "SAMEORIGIN"
+SILENCED_SYSTEM_CHECKS = ["security.W019"]
 
 # Configuración específica para Vercel
 if 'VERCEL' in os.environ:
