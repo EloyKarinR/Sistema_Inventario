@@ -158,3 +158,4 @@ Este proyecto está bajo la Licencia MIT - ver el archivo [LICENSE.md](LICENSE.m
 
 * A la comunidad de Django
 * A todos los que usan y mejoran este proyecto
+ 
