@@ -21,12 +21,17 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
 # GENERAR UNA NUEVA SECRET_KEY PARA PRODUCCIÓN
-SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-GENERAR-NUEVA-CLAVE-PARA-PRODUCCION')
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-GENERAR-NUEVA-CLAVE-PARA-PRODUCCION')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get('DEBUG', 'True').lower() == 'true'
+DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
 
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+# Configuración para Vercel
+if 'VERCEL' in os.environ:
+    ALLOWED_HOSTS = ['.vercel.app', 'localhost', '127.0.0.1']
+    DEBUG = False
+else:
+    ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 
 
 # Application definition
@@ -145,3 +150,30 @@ SESSION_SAVE_EVERY_REQUEST = True
 SESSION_COOKIE_SECURE = True  # Solo enviar cookie por HTTPS
 SESSION_COOKIE_HTTPONLY = True  # No permitir acceso a la cookie via JavaScript
 SESSION_COOKIE_SAMESITE = 'Strict'  # Protección contra CSRF
+
+# Configuración específica para Vercel
+if 'VERCEL' in os.environ:
+    DEBUG = False
+    ALLOWED_HOSTS = ['.vercel.app', 'localhost', '127.0.0.1']
+    
+    # Base de datos SQLite para demo en Vercel
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': ':memory:',  # Base de datos en memoria para Vercel
+        }
+    }
+    
+    # Configuración de archivos estáticos para Vercel
+    STATIC_URL = '/static/'
+    STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+    
+    # Deshabilitar migraciones automáticas en Vercel
+    class DisableMigrations:
+        def __contains__(self, item):
+            return True
+        def __getitem__(self, item):
+            return None
+    
+    # Solo para demo - en producción real usar PostgreSQL
+    MIGRATION_MODULES = DisableMigrations()
