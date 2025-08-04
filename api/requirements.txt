@@ -1,6 +1,2 @@
-Django==5.1.3
-Pillow==10.4.0
-chardet==5.2.0
-sqlparse==0.4.4
-asgiref==3.8.1
-tzdata==2024.1
+# Configuración mínima para Vercel
+# Sin dependencias - solo Python stdlib
