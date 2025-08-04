@@ -6,7 +6,7 @@ from .views_venta import buscar_productos_venta, guardar_venta
 app_name = 'Inventario'
 
 urlpatterns = [
-    path('', views.index, name='index'),
+    path('', views.welcome_view, name='welcome'),
     path('panel_control/', views.panel_control, name='panel_control'),
     path('nueva_compra/', views.nueva_compra, name='nueva_compra'),
     path('historial_compras/', views.historial_compras, name='historial_compras'),
