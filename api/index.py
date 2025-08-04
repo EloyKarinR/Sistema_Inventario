@@ -1,36 +1,45 @@
-def application(environ, start_response):
-    """WSGI application simple para Vercel"""
-    html = """<!DOCTYPE html>
-<html><head><title>✅ Sistema Inventario FUNCIONANDO</title>
-<style>
-body{font-family:Arial;background:linear-gradient(135deg,#667eea,#764ba2);color:white;text-align:center;padding:50px;margin:0}
-.card{background:rgba(255,255,255,0.1);padding:30px;border-radius:15px;margin:20px;backdrop-filter:blur(10px)}
-.btn{display:inline-block;padding:15px 25px;background:rgba(255,255,255,0.2);color:white;text-decoration:none;border-radius:25px;margin:10px}
-h1{font-size:3em;margin-bottom:30px}
-</style></head><body>
-<h1>🎉 ¡SISTEMA DESPLEGADO EXITOSAMENTE!</h1>
-<div class="card">
-<h2>📦 Sistema de Inventario Django</h2>
-<p style="font-size:1.2em">✅ Aplicación funcionando perfectamente en Vercel</p>
-<div style="margin:25px 0">
-<a href="/admin/" class="btn">🔐 Panel Admin</a>
-<a href="/panel_control/" class="btn">📱 Dashboard</a>
-<a href="/productos/" class="btn">📦 Productos</a>
-</div>
-<div style="background:rgba(0,0,0,0.2);padding:15px;border-radius:8px">
-<p><strong>Usuario:</strong> admin | <strong>Contraseña:</strong> admin123</p>
-</div>
-</div>
-<div class="card">
-<h3>🚀 Stack Tecnológico</h3>
-<p>Django 5.1.3 | Python 3.9 | Vercel Serverless Functions</p>
-<p>Inventario + Ventas + Reportes + Clientes</p>
-</div>
-<p style="margin-top:40px;opacity:0.8">Sistema Profesional de Inventario | Desplegado en la Nube</p>
-</body></html>""".encode('utf-8')
-    
-    start_response('200 OK', [('Content-Type', 'text/html; charset=utf-8')])
-    return [html]
+import os
+import sys
+import django
+from pathlib import Path
 
-# Alias para compatibilidad con Vercel
+# Agregar el directorio del proyecto al path
+BASE_DIR = Path(__file__).resolve().parent.parent
+sys.path.append(str(BASE_DIR))
+
+# Configurar Django
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'SistemaInventario.settings')
+os.environ['VERCEL'] = '1'  # Activar configuración de Vercel
+
+try:
+    django.setup()
+    from django.core.wsgi import get_wsgi_application
+    application = get_wsgi_application()
+    
+except Exception as e:
+    # Si Django falla, mostrar página de error informativa
+    def application(environ, start_response):
+        html = f"""<!DOCTYPE html>
+<html><head><title>⚠️ Error de Configuración</title>
+<style>
+body{{font-family:Arial;background:linear-gradient(135deg,#ff6b6b,#ee5a24);color:white;text-align:center;padding:50px;margin:0}}
+.card{{background:rgba(255,255,255,0.1);padding:30px;border-radius:15px;margin:20px;backdrop-filter:blur(10px)}}
+.error{{background:rgba(255,0,0,0.2);padding:15px;border-radius:8px;margin:20px;font-family:monospace;text-align:left}}
+</style></head><body>
+<h1>⚠️ Error en la Aplicación Django</h1>
+<div class="card">
+<h2>�️ Modo de Depuración</h2>
+<p>La aplicación Django no pudo inicializarse correctamente.</p>
+<div class="error">
+Error: {str(e)}
+</div>
+<p><strong>Nota:</strong> Vercel necesita configuración adicional para Django completo.</p>
+<p>Mostrando página estática mientras se resuelve...</p>
+</div>
+</body></html>""".encode('utf-8')
+        
+        start_response('200 OK', [('Content-Type', 'text/html; charset=utf-8')])
+        return [html]
+
+# Alias para compatibilidad
 app = application
