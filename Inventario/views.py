@@ -12,6 +12,7 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 import json
 import traceback
+import os
 from Inventario.models import HistorialCompras
 from django.views.decorators.csrf import csrf_exempt  # Temporal para pruebas
 from django.db.models import Max
@@ -129,7 +130,11 @@ from .forms import ProfileForm
 
 
 def index(request):
+    """Vista de bienvenida para Vercel demo"""
     if not request.user.is_authenticated:
+        # Para demo en Vercel, mostrar página de bienvenida
+        if 'VERCEL' in os.environ:
+            return render(request, 'Inventario/bienvenida_vercel.html')
         return redirect('Inventario:login')
     return redirect('Inventario:panel_control')
 

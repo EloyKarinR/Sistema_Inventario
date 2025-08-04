@@ -156,11 +156,11 @@ if 'VERCEL' in os.environ:
     DEBUG = False
     ALLOWED_HOSTS = ['.vercel.app', 'localhost', '127.0.0.1']
     
-    # Base de datos SQLite para demo en Vercel
+    # Base de datos SQLite temporal para demo en Vercel
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': ':memory:',  # Base de datos en memoria para Vercel
+            'NAME': '/tmp/db_vercel.sqlite3',  # Base de datos temporal
         }
     }
     
@@ -168,12 +168,5 @@ if 'VERCEL' in os.environ:
     STATIC_URL = '/static/'
     STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
     
-    # Deshabilitar migraciones automáticas en Vercel
-    class DisableMigrations:
-        def __contains__(self, item):
-            return True
-        def __getitem__(self, item):
-            return None
-    
-    # Solo para demo - en producción real usar PostgreSQL
-    MIGRATION_MODULES = DisableMigrations()
+    # Para demo en Vercel - permitir migraciones
+    # En producción real usar PostgreSQL con Vercel Postgres
