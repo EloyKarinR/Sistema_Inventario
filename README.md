@@ -2,6 +2,28 @@
 
 Sistema web de gestión de inventario desarrollado con Django. Permite administrar productos, ventas, compras, clientes, proveedores y generar reportes.
 
+## 🌐 Demo en Línea
+
+Puedes ver una demostración en línea en: [https://sistema-inventario-xi.vercel.app](https://sistema-inventario-xi.vercel.app)
+
+**Nota sobre la demo**: La demo online está limitada (no permite uploads de archivos). Para funcionalidad completa, ejecuta el proyecto localmente siguiendo las instrucciones de instalación.
+
+## 🔄 Arquivos del Repositorio
+
+Este repositorio contiene archivos para diferentes propósitos:
+
+### 📁 **Desarrollo Local** (Lo que necesitas):
+- `manage.py`, `requirements.txt`, `Inventario/`, `SistemaInventario/`
+- `setup-local.bat` / `setup-local.sh` - Scripts de configuración automática
+- `INSTALACION_RAPIDA.md` - Guía de 5 minutos
+
+### 🌐 **Deployment Vercel** (Opcional):
+- `vercel.json`, `api/`, `requirements-vercel.txt`
+- Solo necesarios si vas a desplegar en Vercel
+
+### 📚 **Documentación**:
+- `README.md`, `DEPENDENCIAS.md` - Información del proyecto
+
 ## Capturas de Pantalla 📸
 
 ### Panel de Control
@@ -42,15 +64,55 @@ Sistema web de gestión de inventario desarrollado con Django. Permite administr
 - Navegador web moderno
 - Git (para clonar el repositorio)
 
-## Instalación 🔧
+## Instalación Local Completa 🔧
 
-1. Clonar el repositorio:
+### 🚀 **Método Rápido (Recomendado)**:
+
+#### Windows:
+```bash
+git clone https://github.com/EloyKarinR/Sistema_Inventario.git
+cd Sistema_Inventario
+setup-local.bat
+```
+
+#### Linux/Mac:
+```bash
+git clone https://github.com/EloyKarinR/Sistema_Inventario.git
+cd Sistema_Inventario
+chmod +x setup-local.sh
+./setup-local.sh
+```
+
+### 🧹 **Instalación Solo Desarrollo Local**:
+
+Si prefieres eliminar archivos específicos de Vercel:
+
+#### Windows:
+```bash
+git clone https://github.com/EloyKarinR/Sistema_Inventario.git
+cd Sistema_Inventario
+install-clean.bat
+setup-local.bat
+```
+
+#### Linux/Mac:
+```bash
+git clone https://github.com/EloyKarinR/Sistema_Inventario.git
+cd Sistema_Inventario
+chmod +x install-clean.sh setup-local.sh
+./install-clean.sh
+./setup-local.sh
+```
+
+### 📝 **Método Manual**:
+
+### 1. Clonar el repositorio:
 ```bash
 git clone https://github.com/EloyKarinR/Sistema_Inventario.git
 cd Sistema_Inventario
 ```
 
-2. Crear y activar entorno virtual:
+### 2. Crear y activar entorno virtual:
 ```bash
 # Windows
 python -m venv env
@@ -61,24 +123,31 @@ python3 -m venv env
 source env/bin/activate
 ```
 
-3. Instalar dependencias:
+### 3. Instalar dependencias:
 ```bash
 pip install -r requirements.txt
 ```
 
-4. Realizar migraciones:
+**Dependencias incluidas**:
+- Django 5.1.3 (framework web)
+- Pillow 11.0.0 (manejo de imágenes)
+- reportlab 4.2.5 (generación de PDFs)
+- dj-database-url 2.1.0 (configuración de base de datos)
+- Y otros 6 paquetes necesarios para el funcionamiento completo
+
+### 4. Configurar base de datos:
 ```bash
 python manage.py makemigrations
 python manage.py migrate
 ```
 
-5. Crear superusuario:
+### 5. Crear superusuario (administrador):
 ```bash
 python manage.py createsuperuser
 ```
-**Importante**: Crea tus propias credenciales únicas. Este será el administrador de TU instalación.
+**Importante**: Crea tus propias credenciales únicas. Este será el administrador de TU instalación privada.
 
-6. Crear carpetas necesarias:
+### 6. Crear carpetas para archivos multimedia:
 ```bash
 mkdir media
 mkdir media/productos
@@ -86,28 +155,82 @@ mkdir media/empresa
 mkdir media/profile_pics
 ```
 
-7. Iniciar el servidor:
+### 7. Recopilar archivos estáticos:
+```bash
+python manage.py collectstatic
+```
+
+### 8. Iniciar el servidor:
 ```bash
 python manage.py runserver
 ```
 
-## Configuración ⚙️
+### 9. Acceder al sistema:
+- **Aplicación principal**: http://localhost:8000
+- **Panel de administración**: http://localhost:8000/admin/
 
-1. Acceder al panel de administración (`/admin/`)
-2. Crear perfil de empresa
-3. Configurar categorías de productos
-4. Añadir productos iniciales
+## Primera Configuración ⚙️
 
-## Uso 💡
+1. Acceder al panel de administración (`/admin/`) con las credenciales que creaste
+2. Configurar el perfil de tu empresa en "Profiles"
+3. Crear categorías de productos
+4. Añadir productos iniciales con imágenes
+5. Comenzar a usar el sistema con tus propios datos
 
-1. Acceder a `http://localhost:8000`
-2. Iniciar sesión con las credenciales del superusuario que TÚ creaste
-3. Navegar al panel de control
-4. Comenzar a gestionar tu inventario con tus propios datos
+## Diferencias: Demo Online vs. Instalación Local �
 
-**Nota**: Cada instalación es independiente. Tus datos son privados y no se comparten con otros usuarios del sistema.
+| Característica | Demo Online (Vercel) | Instalación Local |
+|---|---|---|
+| **Subida de imágenes** | ❌ No disponible | ✅ Completamente funcional |
+| **Generación de PDFs** | ❌ Limitada | ✅ Completamente funcional |
+| **Base de datos** | ✅ Solo lectura/demo | ✅ Completa con tus datos |
+| **Personalización** | ❌ Datos de demo | ✅ 100% personalizable |
+| **Rendimiento** | ⚡ Rápido (limitado) | ⚡ Óptimo (sin límites) |
+| **Privacidad** | ⚠️ Demo pública | 🔒 Completamente privado |
 
-## Estructura del Proyecto 📁
+**Recomendación**: Para uso real, siempre instala localmente.
+
+## Solución de Problemas 🛠️
+
+### Error: "No module named 'X'"
+```bash
+# Asegúrate de que el entorno virtual esté activado
+env\Scripts\activate  # Windows
+source env/bin/activate  # Linux/Mac
+
+# Reinstala las dependencias
+pip install -r requirements.txt
+```
+
+### Error: "No such table"
+```bash
+# Ejecuta las migraciones
+python manage.py makemigrations
+python manage.py migrate
+```
+
+### Error: Imágenes no se cargan
+```bash
+# Verifica que las carpetas media existan
+mkdir media/productos
+mkdir media/empresa
+mkdir media/profile_pics
+```
+
+### Error: Archivos estáticos no se cargan
+```bash
+python manage.py collectstatic
+```
+
+## Uso del Sistema 💡
+
+1. **Acceso inicial**: http://localhost:8000
+2. **Iniciar sesión** con las credenciales que creaste
+3. **Panel de control**: Estadísticas y resumen
+4. **Gestión**: Productos, ventas, clientes, proveedores
+5. **Reportes**: Facturas PDF y estadísticas
+
+**Importante**: Cada instalación es completamente independiente y privada.
 
 ```
 SistemaInventario/

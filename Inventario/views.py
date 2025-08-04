@@ -1297,6 +1297,12 @@ def admin_facturas(request):
     return render(request, 'Inventario/admin_facturas.html', context)
 
 def ver_pdf(request, venta_id):
+    # Verificar si PDF está disponible
+    if not PDF_AVAILABLE:
+        add_demo_warning(request)
+        messages.error(request, "La generación de PDFs no está disponible en la demo. Instala localmente para esta funcionalidad.")
+        return redirect('lista_ventas')
+    
     # Obtener los datos
     venta = Venta.objects.get(id=venta_id)
     empresa = PerfilEmpresa.objects.first()
@@ -1435,6 +1441,12 @@ def productos_stock_bajo(request):
     return render(request, 'Inventario/productos_stock_bajo.html', context)
 
 def generar_pdf_inventario(request):
+    # Verificar si PDF está disponible
+    if not PDF_AVAILABLE:
+        add_demo_warning(request)
+        messages.error(request, "La generación de PDFs no está disponible en la demo. Instala localmente para esta funcionalidad.")
+        return redirect('lista_productos')
+    
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(
         buffer,

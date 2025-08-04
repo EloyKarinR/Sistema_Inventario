@@ -1,0 +1,9 @@
+# Excluir archivos específicos de Vercel en rama main
+vercel.json
+.vercel/
+.vercelignore
+requirements-vercel.txt
+api/
+Procfile
+runtime.txt
+Aptfile

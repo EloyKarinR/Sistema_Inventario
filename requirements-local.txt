@@ -1,3 +1,4 @@
+# Dependencias completas para desarrollo local
 Django==5.1.3
 Pillow==11.0.0
 asgiref==3.8.1
