@@ -8,23 +8,13 @@ Puedes ver una demostración en línea en: [https://sistema-inventario-xi.vercel
 
 **Nota sobre la demo**: La demo online está limitada (no permite uploads de archivos). Para funcionalidad completa, ejecuta el proyecto localmente siguiendo las instrucciones de instalación.
 
-## 🌿 Ramas del Repositorio
+## 📁 **Contenido de Este Repositorio**
 
-Este repositorio tiene dos ramas principales:
-
-### 💻 **`main`** (Esta rama - Desarrollo Local):
-- ✅ Solo archivos necesarios para desarrollo local
-- ✅ Setup limpio y rápido
-- ✅ Sin archivos de deployment
-- ✅ Repositorio optimizado para desarrollo
-
-### 🌐 **`vercel-deploy`** (Deployment):
-- ✅ Configuración completa para Vercel
-- ✅ Archivos de deployment incluidos
-- ✅ Optimizaciones para serverless
-- ✅ Lista para conectar con Vercel
-
-## 🔄 Arquivos de Esta Rama (main)
+### 💻 **Desarrollo Local Completo**:
+- ✅ Código Django completo y funcional
+- ✅ Setup automático con scripts incluidos
+- ✅ Documentación detallada
+- ✅ Sin archivos innecesarios de deployment
 
 ### 📁 **Solo Desarrollo Local**:
 - `manage.py`, `requirements.txt`, `Inventario/`, `SistemaInventario/`

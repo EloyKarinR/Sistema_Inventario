@@ -1,94 +1,49 @@
-# 🌿 Estrategia de Ramas
+# 🔒 Estructura de Repositorio Simplificada
 
-Este repositorio utiliza una estrategia de **ramas separadas** para mantener el código organizado según su propósito:
+Este repositorio está **optimizado para desarrollo local** con una estructura limpia y directa.
 
-## 🏗️ **Estructura de Ramas**
+## � **Filosofía del Repositorio**
 
-### 💻 **`main`** - Desarrollo Local
-**Propósito**: Desarrollo local limpio y optimizado
+### 💻 **Enfoque en Desarrollo Local**
+- ✅ Solo archivos necesarios para desarrollo
+- ✅ Setup rápido y automático
+- ✅ Sin archivos de deployment que confundan
+- ✅ Experiencia limpia para desarrolladores
 
-**Contenido**:
-- ✅ Código Django completo
-- ✅ `requirements.txt` para desarrollo local
-- ✅ Scripts de setup automático
-- ✅ Documentación completa
-- ❌ Sin archivos de deployment
-- ❌ Sin configuraciones de Vercel
+## 📁 **Contenido del Repositorio**
 
-**Para usar**:
-```bash
-git clone https://github.com/EloyKarinR/Sistema_Inventario.git
-cd Sistema_Inventario
-setup-local.bat  # Windows
-./setup-local.sh  # Linux/Mac
-```
+### ✅ **Lo que SÍ incluye**:
+- Código Django completo y funcional
+- Scripts de instalación automática
+- Documentación clara y detallada
+- Archivos de configuración para desarrollo local
+- Sistema de dependencias optimizado
 
----
+### ❌ **Lo que NO incluye**:
+- Archivos de deployment específicos
+- Configuraciones de servicios cloud
+- Scripts de producción
+- Archivos innecesarios para desarrollo local
 
-### 🌐 **`vercel-deploy`** - Deployment en Vercel
-**Propósito**: Deployment y configuración para producción
-
-**Contenido adicional**:
-- ✅ Todo el contenido de `main`
-- ✅ `vercel.json` - Configuración de Vercel
-- ✅ `api/` - Adaptador serverless
-- ✅ `requirements-vercel.txt` - Dependencias optimizadas
-- ✅ `Procfile`, `runtime.txt`, `Aptfile` - Archivos de deployment
-- ✅ Templates específicos de demo
-
-**Para deployment**:
-1. Conecta Vercel directamente a la rama `vercel-deploy`
-2. Vercel usará automáticamente la configuración optimizada
-
----
-
-## 🎯 **Beneficios de Esta Estrategia**
+## 🚀 **Beneficios de Esta Aproximación**
 
 ### 👨‍💻 **Para Desarrolladores**:
-- **Repositorio limpio**: Solo archivos necesarios
-- **Setup rápido**: Sin archivos innecesarios que confundan
-- **Menor tamaño**: Clonación más rápida
+- **Clonación rápida**: Solo archivos necesarios
+- **Setup directo**: Sin configuraciones complejas
+- **Experiencia limpia**: Sin archivos que no necesiten
 - **Enfoque claro**: Solo desarrollo local
 
-### 🚀 **Para Deployment**:
-- **Configuración completa**: Todo listo para producción
-- **Optimizaciones específicas**: Para entorno serverless
-- **Separación de concerns**: Development vs Production
-
-### 🔄 **Para Mantenimiento**:
-- **Cambios específicos**: Modificaciones según propósito
-- **Menos conflictos**: Archivos separados por función
-- **Historial claro**: Commits organizados por propósito
-
----
-
-## 🛠️ **Flujo de Trabajo**
-
-### Desarrollo Local:
-1. Clonar `main`
-2. Desarrollar localmente
-3. Commit a `main`
-
-### Deployment:
-1. Merge cambios de `main` a `vercel-deploy`
-2. Vercel detecta cambios automáticamente
-3. Deploy automático
-
-### Sincronización:
-```bash
-# Actualizar vercel-deploy con cambios de main
-git checkout vercel-deploy
-git merge main
-git push origin vercel-deploy
-```
-
----
+### � **Para el Proyecto**:
+- **Mantenimiento simple**: Una sola rama pública
+- **Documentación enfocada**: Solo lo relevante para usuarios
+- **Menos confusión**: Propósito claro del repositorio
 
 ## 🎉 **Resultado**
 
-- ✅ **Desarrolladores**: Experiencia limpia y rápida
-- ✅ **Deployment**: Optimizado y automático  
-- ✅ **Usuarios**: Pueden elegir exactamente lo que necesitan
-- ✅ **Mantenimiento**: Organizado y escalable
+Un repositorio **limpio, profesional y enfocado** que permite a cualquier desarrollador:
 
-Esta estrategia asegura que cada usuario obtenga exactamente lo que necesita, sin archivos innecesarios.
+1. **Clonar** el proyecto
+2. **Ejecutar** el script de setup
+3. **Comenzar** a desarrollar inmediatamente
+
+Sin complicaciones, sin archivos innecesarios, sin confusión. Solo un sistema de inventario Django listo para usar. 🎯
